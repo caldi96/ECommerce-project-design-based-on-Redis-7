@@ -35,3 +35,18 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### .env ###
+*.env
+.env.*
+
+### personal ###
+application-local.yml
+application-local.properties
+application-secret.yml
+application-secret.properties
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride

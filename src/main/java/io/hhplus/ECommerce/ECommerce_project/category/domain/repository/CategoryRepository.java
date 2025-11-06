@@ -13,5 +13,13 @@ public interface CategoryRepository {
 
     List<Category> findAll();
 
+    boolean existsByCategoryName(String name);
+
+    boolean existsByDisplayOrder(int displayOrder);
+
+    boolean existsByCategoryNameExceptId(String name, Long excludedId);
+
+    boolean existsByDisplayOrderExceptId(int displayOrder, Long excludedId);
+
     void deleteById(Long id);
 }

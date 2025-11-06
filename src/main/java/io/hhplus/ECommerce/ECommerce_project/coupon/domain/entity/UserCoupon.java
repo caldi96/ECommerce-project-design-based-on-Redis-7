@@ -33,6 +33,28 @@ public class UserCoupon {
     private LocalDateTime expiredAt;
     private LocalDateTime issuedAt;
 
+    // ===== 정적 팩토리 메서드 =====
+
+    /**
+     * 쿠폰 발급
+     */
+    public static UserCoupon issueCoupon(Long userId, Long couponId) {
+        LocalDateTime now = LocalDateTime.now();
+
+        return new UserCoupon(
+            null,                           // id는 저장 시 생성
+            couponId,
+            userId,
+            UserCouponStatus.AVAILABLE,     // 발급 시 사용 가능 상태
+            0,                              // usedCount (초기값 0)
+            null,                           // usedAt (아직 사용 안 함)
+            null,                           // expiredAt (만료 안 됨)
+            now                             // issuedAt (발급 시점)
+        );
+    }
+
+    // ===== 비즈니스 로직 메서드 =====
+
     /**
      * 쿠폰 사용 가능 여부 확인
      */
@@ -73,6 +95,22 @@ public class UserCoupon {
         // 사용 횟수 제한에 도달하면 USED 상태로 변경
         if (this.usedCount >= perUserLimit) {
             this.status = UserCouponStatus.USED;
+        }
+    }
+
+    /**
+     * 쿠폰 사용 취소 (보상 트랜잭션용)
+     */
+    public void cancelUse(int perUserLimit) {
+        if (this.usedCount <= 0) {
+            throw new CouponException(ErrorCode.USER_COUPON_NO_USAGE_TO_CANCEL);
+        }
+
+        this.usedCount--;
+
+        // USED 상태였는데 사용 횟수가 제한 미만으로 줄어들면 AVAILABLE로 복구
+        if (this.status == UserCouponStatus.USED && this.usedCount < perUserLimit) {
+            this.status = UserCouponStatus.AVAILABLE;
         }
     }
 

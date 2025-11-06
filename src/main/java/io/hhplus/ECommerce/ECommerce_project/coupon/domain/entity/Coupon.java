@@ -34,6 +34,127 @@ public class Coupon {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    // ===== 정적 팩토리 메서드 =====
+
+    /**
+     * 쿠폰 생성
+     */
+    public static Coupon createCoupon(
+            String name,
+            String code,
+            DiscountType discountType,
+            BigDecimal discountValue,
+            BigDecimal maxDiscountAmount,
+            BigDecimal minOrderAmount,
+            Integer totalQuantity,
+            Integer perUserLimit,
+            LocalDateTime startDate,
+            LocalDateTime endDate
+    ) {
+        validateName(name);
+        validateDiscountType(discountType);
+        validateDiscountValue(discountValue);
+        validateTotalQuantity(totalQuantity);
+        validatePerUserLimit(perUserLimit);
+        validateDateRange(startDate, endDate);
+
+        // 정률 할인일 경우 할인율 범위 검증 (0 ~ 100)
+        if (discountType == DiscountType.PERCENTAGE) {
+            if (discountValue.compareTo(BigDecimal.ZERO) <= 0 || discountValue.compareTo(new BigDecimal("100")) > 0) {
+                throw new CouponException(ErrorCode.COUPON_PERCENTAGE_INVALID,
+                    "할인율은 0보다 크고 100 이하여야 합니다. 입력값: " + discountValue);
+            }
+        }
+
+        // 정액 할인일 경우 할인 금액 검증
+        if (discountType == DiscountType.FIXED) {
+            if (discountValue.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new CouponException(ErrorCode.COUPON_FIXED_AMOUNT_INVALID,
+                    "할인 금액은 0보다 커야 합니다. 입력값: " + discountValue);
+            }
+        }
+
+        // 최소 주문 금액 검증
+        if (minOrderAmount != null && minOrderAmount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new CouponException(ErrorCode.COUPON_MIN_ORDER_AMOUNT_INVALID,
+                "최소 주문 금액은 0 이상이어야 합니다. 입력값: " + minOrderAmount);
+        }
+
+        // 최대 할인 금액 검증 (정률 할인일 때만)
+        if (maxDiscountAmount != null && maxDiscountAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new CouponException(ErrorCode.COUPON_MAX_DISCOUNT_AMOUNT_INVALID,
+                "최대 할인 금액은 0보다 커야 합니다. 입력값: " + maxDiscountAmount);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        return new Coupon(
+            null,                   // id는 저장 시 생성
+            name,
+            code,
+            discountType,
+            discountValue,
+            maxDiscountAmount,
+            minOrderAmount,
+            totalQuantity,
+            0,                      // issuedQuantity (초기값 0)
+            0,                      // usageCount (초기값 0)
+            perUserLimit,
+            startDate,
+            endDate,
+            true,                   // isActive (초기 상태는 활성)
+            now,                    // createdAt
+            now                     // updatedAt
+        );
+    }
+
+    // ===== Validation 메서드 =====
+
+    private static void validateName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new CouponException(ErrorCode.COUPON_NAME_REQUIRED);
+        }
+    }
+
+    private static void validateDiscountType(DiscountType discountType) {
+        if (discountType == null) {
+            throw new CouponException(ErrorCode.COUPON_DISCOUNT_TYPE_REQUIRED);
+        }
+    }
+
+    private static void validateDiscountValue(BigDecimal discountValue) {
+        if (discountValue == null) {
+            throw new CouponException(ErrorCode.COUPON_DISCOUNT_VALUE_REQUIRED);
+        }
+        if (discountValue.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new CouponException(ErrorCode.COUPON_DISCOUNT_VALUE_INVALID);
+        }
+    }
+
+    private static void validateTotalQuantity(Integer totalQuantity) {
+        if (totalQuantity == null || totalQuantity <= 0) {
+            throw new CouponException(ErrorCode.COUPON_TOTAL_QUANTITY_INVALID);
+        }
+    }
+
+    private static void validatePerUserLimit(Integer perUserLimit) {
+        if (perUserLimit == null || perUserLimit <= 0) {
+            throw new CouponException(ErrorCode.COUPON_PER_USER_LIMIT_INVALID);
+        }
+    }
+
+    private static void validateDateRange(LocalDateTime startDate, LocalDateTime endDate) {
+        if (startDate == null || endDate == null) {
+            throw new CouponException(ErrorCode.COUPON_DATE_REQUIRED);
+        }
+        if (startDate.isAfter(endDate)) {
+            throw new CouponException(ErrorCode.COUPON_INVALID_DATE_RANGE,
+                "시작일은 종료일보다 이전이어야 합니다. 시작일: " + startDate + ", 종료일: " + endDate);
+        }
+    }
+
+    // ===== 비즈니스 로직 메서드 =====
+
     /**
      * 쿠폰 활성화
      */
@@ -53,6 +174,105 @@ public class Coupon {
             throw new CouponException(ErrorCode.COUPON_ALREADY_INACTIVE);
         }
         this.isActive = false;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 쿠폰명 수정
+     */
+    public void updateName(String name) {
+        validateName(name);
+        this.name = name;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 쿠폰 코드 수정
+     */
+    public void updateCode(String code) {
+        this.code = code;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 할인 정보 수정
+     */
+    public void updateDiscountInfo(DiscountType discountType, BigDecimal discountValue, BigDecimal maxDiscountAmount) {
+        validateDiscountType(discountType);
+        validateDiscountValue(discountValue);
+
+        // 정률 할인일 경우 할인율 범위 검증 (0 ~ 100)
+        if (discountType == DiscountType.PERCENTAGE) {
+            if (discountValue.compareTo(BigDecimal.ZERO) <= 0 || discountValue.compareTo(new BigDecimal("100")) > 0) {
+                throw new CouponException(ErrorCode.COUPON_PERCENTAGE_INVALID,
+                    "할인율은 0보다 크고 100 이하여야 합니다. 입력값: " + discountValue);
+            }
+        }
+
+        // 정액 할인일 경우 할인 금액 검증
+        if (discountType == DiscountType.FIXED) {
+            if (discountValue.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new CouponException(ErrorCode.COUPON_FIXED_AMOUNT_INVALID,
+                    "할인 금액은 0보다 커야 합니다. 입력값: " + discountValue);
+            }
+        }
+
+        // 최대 할인 금액 검증
+        if (maxDiscountAmount != null && maxDiscountAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new CouponException(ErrorCode.COUPON_MAX_DISCOUNT_AMOUNT_INVALID,
+                "최대 할인 금액은 0보다 커야 합니다. 입력값: " + maxDiscountAmount);
+        }
+
+        this.discountType = discountType;
+        this.discountValue = discountValue;
+        this.maxDiscountAmount = maxDiscountAmount;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 최소 주문 금액 수정
+     */
+    public void updateMinOrderAmount(BigDecimal minOrderAmount) {
+        if (minOrderAmount != null && minOrderAmount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new CouponException(ErrorCode.COUPON_MIN_ORDER_AMOUNT_INVALID,
+                "최소 주문 금액은 0 이상이어야 합니다. 입력값: " + minOrderAmount);
+        }
+        this.minOrderAmount = minOrderAmount;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 총 수량 수정
+     */
+    public void updateTotalQuantity(int totalQuantity) {
+        validateTotalQuantity(totalQuantity);
+
+        // 이미 발급된 수량보다 작게 수정할 수 없음
+        if (totalQuantity < this.issuedQuantity) {
+            throw new CouponException(ErrorCode.COUPON_TOTAL_QUANTITY_INVALID,
+                "총 수량은 이미 발급된 수량(" + this.issuedQuantity + ")보다 작을 수 없습니다. 입력값: " + totalQuantity);
+        }
+
+        this.totalQuantity = totalQuantity;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 사용자당 제한 수정
+     */
+    public void updatePerUserLimit(int perUserLimit) {
+        validatePerUserLimit(perUserLimit);
+        this.perUserLimit = perUserLimit;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 사용 기간 수정
+     */
+    public void updateDateRange(LocalDateTime startDate, LocalDateTime endDate) {
+        validateDateRange(startDate, endDate);
+        this.startDate = startDate;
+        this.endDate = endDate;
         this.updatedAt = LocalDateTime.now();
     }
 
@@ -97,12 +317,22 @@ public class Coupon {
 
     /**
      * 쿠폰 사용 시 사용량 증가
+     * 주의: usageCount는 전체 사용 횟수이므로 totalQuantity와 직접 비교하지 않음
+     * 실제 사용 가능 여부는 UserCoupon에서 perUserLimit으로 검증
      */
     public void increaseUsageCount() {
-        if (this.usageCount >= this.totalQuantity) {
-            throw new CouponException(ErrorCode.COUPON_ALL_USED);
-        }
         this.usageCount++;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 쿠폰 사용 취소 시 사용량 감소 (보상 트랜잭션용)
+     */
+    public void decreaseUsageCount() {
+        if (this.usageCount <= 0) {
+            throw new CouponException(ErrorCode.COUPON_CANNOT_DECREASE_USAGE);
+        }
+        this.usageCount--;
         this.updatedAt = LocalDateTime.now();
     }
 
@@ -179,5 +409,10 @@ public class Coupon {
         }
 
         return discountAmount;
+    }
+
+    // ===== 테스트를 위한 ID 설정 메서드 (인메모리 DB용) =====
+    public void setId(Long id) {
+        this.id = id;
     }
 }

@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProductMemoryRepository implements ProductRepository {
     private final Map<Long, Product> productMap = new ConcurrentHashMap<>();
+    private final Map<Long, Object> lockMap = new ConcurrentHashMap<>(); // 상품별 락 객체
     private final SnowflakeIdGenerator idGenerator;
 
     @Override
@@ -23,7 +24,17 @@ public class ProductMemoryRepository implements ProductRepository {
         if (product.getId() == null) {
             product.setId(idGenerator.nextId());
         }
-        productMap.put(product.getId(), product);
+
+        // 상품 ID가 있는 경우 락을 걸고 저장 (동시성 제어)
+        if (product.getId() != null) {
+            Object lock = lockMap.computeIfAbsent(product.getId(), k -> new Object());
+            synchronized (lock) {
+                productMap.put(product.getId(), product);
+            }
+        } else {
+            productMap.put(product.getId(), product);
+        }
+
         return product;
     }
 
@@ -31,6 +42,18 @@ public class ProductMemoryRepository implements ProductRepository {
     public Optional<Product> findById(Long id) {
         return Optional.ofNullable(productMap.get(id))
                 .filter(p -> p.getDeletedAt() == null);  // 삭제되지 않은 상품만 반환
+    }
+
+    @Override
+    public Optional<Product> findByIdWithLock(Long id) {
+        // 상품별 락 객체 획득 (없으면 생성)
+        Object lock = lockMap.computeIfAbsent(id, k -> new Object());
+
+        // 해당 상품에 대한 락을 획득하고 조회
+        synchronized (lock) {
+            return Optional.ofNullable(productMap.get(id))
+                    .filter(p -> p.getDeletedAt() == null);
+        }
     }
 
     @Override

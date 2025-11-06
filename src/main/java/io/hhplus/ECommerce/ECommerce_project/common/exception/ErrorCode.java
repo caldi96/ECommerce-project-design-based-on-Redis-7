@@ -77,6 +77,7 @@ public enum ErrorCode {
     ORDER_POINT_AMOUNT_INVALID("포인트 사용 금액은 0 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
     ORDER_FINAL_AMOUNT_NEGATIVE("최종 결제 금액은 0 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
     ORDER_TOTAL_AMOUNT_REQUIRED("주문 총 금액은 필수입니다.", HttpStatus.BAD_REQUEST),
+    ORDER_ACCESS_DENIED("주문 접근이 거부되었습니다.", HttpStatus.BAD_REQUEST),
     ORDER_PRODUCT_CANNOT_BE_ORDERED("주문 불가능한 상품입니다", HttpStatus.CONFLICT),
     ORDER_INVALID_STATUS_FOR_PAYMENT("결제 가능한 상태가 아닙니다.", HttpStatus.CONFLICT),
     ORDER_INVALID_STATUS_FOR_CANCEL("취소 가능한 상태가 아닙니다.", HttpStatus.CONFLICT),
@@ -111,12 +112,27 @@ public enum ErrorCode {
 
     // ===== Coupon =====
     COUPON_NOT_FOUND("쿠폰을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    COUPON_NAME_REQUIRED("쿠폰명은 필수입니다.", HttpStatus.BAD_REQUEST),
+    COUPON_CODE_REQUIRED("쿠폰 코드는 필수입니다.", HttpStatus.BAD_REQUEST),
+    COUPON_DISCOUNT_TYPE_REQUIRED("할인 타입은 필수입니다.", HttpStatus.BAD_REQUEST),
+    COUPON_DISCOUNT_VALUE_REQUIRED("할인 값은 필수입니다.", HttpStatus.BAD_REQUEST),
+    COUPON_DISCOUNT_VALUE_INVALID("할인 값은 0보다 커야 합니다.", HttpStatus.BAD_REQUEST),
+    COUPON_PERCENTAGE_INVALID("할인율은 0보다 크고 100 이하여야 합니다.", HttpStatus.BAD_REQUEST),
+    COUPON_FIXED_AMOUNT_INVALID("할인 금액은 0보다 커야 합니다.", HttpStatus.BAD_REQUEST),
+    COUPON_MIN_ORDER_AMOUNT_INVALID("최소 주문 금액은 0 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
+    COUPON_MAX_DISCOUNT_AMOUNT_INVALID("최대 할인 금액은 0보다 커야 합니다.", HttpStatus.BAD_REQUEST),
+    COUPON_TOTAL_QUANTITY_INVALID("총 수량은 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
+    COUPON_PER_USER_LIMIT_INVALID("사용자당 제한은 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
+    COUPON_DATE_REQUIRED("쿠폰 시작일과 종료일은 필수입니다.", HttpStatus.BAD_REQUEST),
+    COUPON_INVALID_DATE_RANGE("시작일은 종료일보다 이전이어야 합니다.", HttpStatus.BAD_REQUEST),
     COUPON_ALL_ISSUED("모든 쿠폰이 이미 발급되었습니다.", HttpStatus.CONFLICT),
     COUPON_ALL_USED("모든 쿠폰이 이미 사용되었습니다.", HttpStatus.CONFLICT),
     COUPON_NOT_AVAILABLE("사용할 수 없는 쿠폰입니다.", HttpStatus.CONFLICT),
     COUPON_EXPIRED("만료된 쿠폰입니다.", HttpStatus.CONFLICT),
     COUPON_NOT_STARTED("쿠폰 사용 기간이 아닙니다.", HttpStatus.CONFLICT),
     COUPON_USAGE_LIMIT_EXCEEDED("쿠폰 사용 횟수를 초과했습니다.", HttpStatus.CONFLICT),
+    COUPON_CANNOT_DECREASE_USAGE("쿠폰 사용 횟수를 감소시킬 수 없습니다.", HttpStatus.CONFLICT),
+    USER_COUPON_NO_USAGE_TO_CANCEL("취소할 쿠폰 사용 이력이 없습니다.", HttpStatus.CONFLICT),
     COUPON_ALREADY_ACTIVE("이미 활성화된 쿠폰입니다.", HttpStatus.CONFLICT),
     COUPON_ALREADY_INACTIVE("이미 비활성화된 쿠폰입니다.", HttpStatus.CONFLICT),
     USER_COUPON_NOT_FOUND("사용자 쿠폰을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
@@ -129,7 +145,9 @@ public enum ErrorCode {
     CATEGORY_NOT_FOUND("카테고리를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     CATEGORY_NAME_REQUIRED("카테고리명은 필수입니다.", HttpStatus.BAD_REQUEST),
     DISPLAY_ORDER_INVALID("표시 순서는 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
-    DISPLAY_ORDER_DUPLICATED("이미 사용 중인 표시 순서입니다.", HttpStatus.CONFLICT);
+    CATEGORY_NAME_DUPLICATED("이미 사용 중인 카테고리명입니다.", HttpStatus.CONFLICT),
+    DISPLAY_ORDER_DUPLICATED("이미 사용 중인 표시 순서입니다.", HttpStatus.CONFLICT),
+    CATEGORY_ALREADY_DELETED("이미 삭제된 카테고리입니다.", HttpStatus.CONFLICT);
 
     private final String message;
     private final HttpStatus status;

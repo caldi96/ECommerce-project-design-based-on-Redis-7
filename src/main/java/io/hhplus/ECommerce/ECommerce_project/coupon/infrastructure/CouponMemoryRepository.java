@@ -15,7 +15,15 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class CouponMemoryRepository implements CouponRepository {
     private final Map<Long, Coupon> couponMap = new ConcurrentHashMap<>();
+    private final Map<Long, Object> lockMap = new ConcurrentHashMap<>();
     private final SnowflakeIdGenerator idGenerator;
+
+    /**
+     * 쿠폰 ID별 락 객체 획득
+     */
+    private Object getLock(Long couponId) {
+        return lockMap.computeIfAbsent(couponId, k -> new Object());
+    }
 
     @Override
     public Coupon save(Coupon coupon) {
@@ -55,5 +63,23 @@ public class CouponMemoryRepository implements CouponRepository {
     @Override
     public void deleteById(Long id) {
         couponMap.remove(id);
+    }
+
+    /**
+     * 동시성 제어를 위한 쿠폰 발급 수량 증가
+     * 쿠폰 ID별로 락을 걸어서 Race Condition 방지
+     */
+    @Override
+    public Coupon increaseIssuedQuantityWithLock(Long couponId) {
+        Object lock = getLock(couponId);
+
+        synchronized (lock) {
+            Coupon coupon = couponMap.get(couponId);
+            if (coupon != null) {
+                coupon.increaseIssuedQuantity();
+                couponMap.put(couponId, coupon);
+            }
+            return coupon;
+        }
     }
 }

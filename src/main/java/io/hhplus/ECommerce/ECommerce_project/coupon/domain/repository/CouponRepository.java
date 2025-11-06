@@ -23,4 +23,11 @@ public interface CouponRepository {
     List<Coupon> findAllByIsActiveTrueAndStartDateBeforeAndEndDateAfter(LocalDateTime now1, LocalDateTime now2);
 
     void deleteById(Long id);
+
+    /**
+     * 동시성 제어를 위한 쿠폰 발급 수량 증가 (인메모리 전용)
+     * @param couponId 쿠폰 ID
+     * @return 업데이트된 쿠폰
+     */
+    Coupon increaseIssuedQuantityWithLock(Long couponId);
 }

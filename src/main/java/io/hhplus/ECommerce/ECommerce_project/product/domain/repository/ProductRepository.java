@@ -12,6 +12,12 @@ public interface ProductRepository {
 
     Optional<Product> findById(Long id);
 
+    /**
+     * 상품 조회 (비관적 락 적용)
+     * 동시성 제어가 필요한 경우 사용 (재고 차감 등)
+     */
+    Optional<Product> findByIdWithLock(Long id);
+
     List<Product> findAll();
 
     List<Product> findAllById(List<Long> ids);

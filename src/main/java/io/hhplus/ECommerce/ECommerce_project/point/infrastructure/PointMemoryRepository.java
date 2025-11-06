@@ -45,6 +45,23 @@ public class PointMemoryRepository implements PointRepository {
     }
 
     @Override
+    public List<Point> findByUserIdWithPaging(Long userId, int page, int size) {
+        return pointMap.values().stream()
+                .filter(point -> Objects.equals(point.getUserId(), userId))
+                .sorted(Comparator.comparing(Point::getCreatedAt).reversed())  // 최신순 정렬
+                .skip((long) page * size)  // 페이징 offset
+                .limit(size)  // 페이징 limit
+                .toList();
+    }
+
+    @Override
+    public long countByUserId(Long userId) {
+        return pointMap.values().stream()
+                .filter(point -> Objects.equals(point.getUserId(), userId))
+                .count();
+    }
+
+    @Override
     public void deleteById(Long id) {
         pointMap.remove(id);
     }

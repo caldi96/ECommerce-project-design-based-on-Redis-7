@@ -115,8 +115,8 @@ Table carts {
 Table points {
     id bigint [pk]
     user_id bigint [ref: > users.id, not null]
-    order_id bigint [ref: > orders.id]  // 주문 관련 포인트일 경우
     amount decimal(10,2) [not null]
+    usedAmount decimal(10,2)
     point_type varchar [not null]  // EARNED, USED, EXPIRED, REFUNDED
     description varchar  // 적립/사용 사유
     expires_at timestamp  // 포인트 만료일
@@ -126,6 +126,15 @@ Table points {
         (order_id)
         (created_at)
     }
+}
+
+Table pointUsageHistory {
+    id bigint [pk]
+    point_id bigint [ref: > points.id, not null]
+    order_id [ref: > orders.id, not null]
+    usedAmount decimal(10,2) [not null] // 사용한 포인트 금액
+    created_at timestamp [not null, default: `now()`]
+    canceled_at timestamp
 }
 
 Table coupons {

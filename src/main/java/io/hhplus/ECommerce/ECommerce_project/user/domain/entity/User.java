@@ -43,7 +43,7 @@ public class User {
         }
 
         if (!hasEnoughPoint(amount)) {
-            throw new PointException(ErrorCode.INSUFFICIENT_POINT,
+            throw new PointException(ErrorCode.POINT_INSUFFICIENT_POINT,
                 "포인트가 부족합니다. 현재 잔액: " + this.pointBalance + ", 사용 요청: " + amount);
         }
 

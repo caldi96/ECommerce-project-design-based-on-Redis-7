@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)  // JPA를 위한 기본 생성자
@@ -33,6 +35,7 @@ public class Orders {
     private BigDecimal shippingFee;
     private OrderStatus status;
     private BigDecimal pointAmount;
+    private List<Long> usedPointIds;  // 사용한 포인트 ID 리스트 (취소 시 복구용)
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime paidAt;
@@ -49,7 +52,8 @@ public class Orders {
         BigDecimal shippingFee,
         Long couponId,
         BigDecimal discountAmount,
-        BigDecimal pointAmount
+        BigDecimal pointAmount,
+        List<Long> usedPointIds
     ) {
         validateUserId(userId);
         validateAmount(totalAmount, "총 상품 금액");
@@ -86,6 +90,7 @@ public class Orders {
             shippingFee,
             OrderStatus.PENDING,  // 초기 상태는 PENDING
             point,
+            usedPointIds != null ? new ArrayList<>(usedPointIds) : new ArrayList<>(),  // 방어적 복사
             now,   // createdAt
             now,   // updatedAt
             null,  // paidAt
@@ -151,6 +156,20 @@ public class Orders {
 
         LocalDateTime now = LocalDateTime.now();
         this.status = OrderStatus.COMPLETED;
+        this.updatedAt = now;
+    }
+
+    /**
+     * 결제 실패 처리
+     */
+    public void paymentFailed() {
+        if (this.status != OrderStatus.PENDING) {
+            throw new OrderException(ErrorCode.ORDER_INVALID_STATUS_FOR_PAYMENT,
+                "대기 중인 주문만 결제 실패 처리할 수 있습니다. 현재 상태: " + this.status);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        this.status = OrderStatus.PAYMENT_FAILED;
         this.updatedAt = now;
     }
 

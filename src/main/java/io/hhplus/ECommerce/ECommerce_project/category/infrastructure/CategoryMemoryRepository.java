@@ -27,12 +27,45 @@ public class CategoryMemoryRepository implements CategoryRepository {
 
     @Override
     public Optional<Category> findById(Long id) {
-        return Optional.ofNullable(categoryMap.get(id));
+        return Optional.ofNullable(categoryMap.get(id))
+                .filter(category -> !category.isDeleted());
     }
 
     @Override
     public List<Category> findAll() {
-        return new ArrayList<>(categoryMap.values());
+        return categoryMap.values().stream()
+                .filter(category -> !category.isDeleted())
+                .toList();
+    }
+
+    @Override
+    public boolean existsByCategoryName(String name) {
+        return categoryMap.values().stream()
+                .filter(category -> !category.isDeleted())
+                .anyMatch(category -> category.getCategoryName().equals(name));
+    }
+
+    @Override
+    public boolean existsByDisplayOrder(int displayOrder) {
+        return categoryMap.values().stream()
+                .filter(category -> !category.isDeleted())
+                .anyMatch(category -> category.getDisplayOrder() == displayOrder);
+    }
+
+    @Override
+    public boolean existsByCategoryNameExceptId(String name, Long excludedId) {
+        return categoryMap.values().stream()
+                .filter(category -> !category.isDeleted())
+                .anyMatch(category -> !category.getId().equals(excludedId) &&
+                                                category.getCategoryName().equals(name));
+    }
+
+    @Override
+    public boolean existsByDisplayOrderExceptId(int displayOrder, Long excludedId) {
+        return categoryMap.values().stream()
+                .filter(category -> !category.isDeleted())
+                .anyMatch(category -> !category.getId().equals(excludedId) &&
+                                                category.getDisplayOrder() == displayOrder);
     }
 
     @Override

@@ -37,8 +37,9 @@ out/
 .vscode/
 
 ### .env ###
-*.env
+.env
 .env.*
+!.env.example
 
 ### personal ###
 application-local.yml

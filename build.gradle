@@ -28,6 +28,9 @@ dependencies {
 	// 인메모리 방식에서 @Transactional 사용할때 추가
 	implementation 'org.springframework:spring-tx'
 
+	// MySQL Driver
+	runtimeOnly 'com.mysql:mysql-connector-j'
+
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	testCompileOnly 'org.projectlombok:lombok'

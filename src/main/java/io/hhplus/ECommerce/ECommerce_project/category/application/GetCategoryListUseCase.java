@@ -1,0 +1,21 @@
+package io.hhplus.ECommerce.ECommerce_project.category.application;
+
+import io.hhplus.ECommerce.ECommerce_project.category.domain.entity.Category;
+import io.hhplus.ECommerce.ECommerce_project.category.domain.repository.CategoryRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class GetCategoryListUseCase {
+
+    private final CategoryRepository categoryRepository;
+
+    @Transactional(readOnly = true)
+    public List<Category> execute() {
+        return categoryRepository.findAll();
+    }
+}

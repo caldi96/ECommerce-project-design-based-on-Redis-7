@@ -114,15 +114,12 @@ public class CreateOrderFromProductUseCase {
                     .findByUserIdAndCouponId(command.userId(), command.couponId())
                     .orElseThrow(() -> new CouponException(ErrorCode.USER_COUPON_NOT_FOUND));
 
-            // 7-2. 쿠폰 정보 조회 (비관적 락 적용)
-            Coupon coupon = couponRepository.findByIdWithLock(command.couponId())
-                    .orElseThrow(() -> new CouponException(ErrorCode.COUPON_NOT_FOUND));
-
-            // 7-3. 쿠폰 유효성 검증
-            coupon.validateAvailability();
-
-            // 7-4. 쿠폰 사용 횟수 증가 (totalQuantity 제한 검증 포함)
-            coupon.increaseUsageCount();
+            // 7-2. 쿠폰 검증 및 사용 횟수 증가 (원자적 연산으로 동시성 문제 해결)
+            // 락 안에서 조회, 유효성 검증, 사용 횟수 증가를 모두 수행하여 Race Condition 방지
+            Coupon coupon = couponRepository.validateAndIncreaseUsageWithLock(command.couponId());
+            if (coupon == null) {
+                throw new CouponException(ErrorCode.COUPON_NOT_FOUND);
+            }
 
             // 7-5. 사용자 쿠폰 사용 가능 여부
             userCoupon.validateCanUse(coupon.getPerUserLimit());

@@ -88,7 +88,7 @@ public class Orders {
             discount,
             finalAmount,
             shippingFee,
-            OrderStatus.COMPLETED,  // 주문 등록 완료 상태
+            OrderStatus.PENDING,  // 결제 대기 상태 (PENDING → PAID → COMPLETED)
             point,
             usedPointIds != null ? new ArrayList<>(usedPointIds) : new ArrayList<>(),  // 방어적 복사
             now,   // createdAt
@@ -101,12 +101,12 @@ public class Orders {
     // ===== 비즈니스 로직 메서드 =====
 
     /**
-     * 결제 완료 처리
+     * 결제 완료 처리 (PENDING → PAID)
      */
     public void paid() {
-        if (this.status != OrderStatus.COMPLETED) {
+        if (this.status != OrderStatus.PENDING) {
             throw new OrderException(ErrorCode.ORDER_INVALID_STATUS_FOR_PAYMENT,
-                "주문 완료된 주문만 결제할 수 있습니다. 현재 상태: " + this.status);
+                "결제 대기 중인 주문만 결제할 수 있습니다. 현재 상태: " + this.status);
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -116,12 +116,14 @@ public class Orders {
     }
 
     /**
-     * 주문 취소 처리 (결제 전)
+     * 주문 취소 처리 (결제 전, 또는 결제 실패 후)
+     * PENDING → CANCELED
+     * PAYMENT_FAILED → CANCELED
      */
     public void cancel() {
-        if (this.status != OrderStatus.COMPLETED) {
+        if (this.status != OrderStatus.PENDING && this.status != OrderStatus.PAYMENT_FAILED) {
             throw new OrderException(ErrorCode.ORDER_INVALID_STATUS_FOR_CANCEL,
-                "주문 완료 상태의 주문만 취소할 수 있습니다. 현재 상태: " + this.status);
+                "결제 대기 중이거나 결제 실패 상태의 주문만 취소할 수 있습니다. 현재 상태: " + this.status);
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -160,12 +162,12 @@ public class Orders {
     }
 
     /**
-     * 결제 실패 처리
+     * 결제 실패 처리 (PENDING → PAYMENT_FAILED)
      */
     public void paymentFailed() {
-        if (this.status != OrderStatus.COMPLETED) {
+        if (this.status != OrderStatus.PENDING) {
             throw new OrderException(ErrorCode.ORDER_INVALID_STATUS_FOR_PAYMENT,
-                "주문 완료된 주문만 결제 실패 처리할 수 있습니다. 현재 상태: " + this.status);
+                "결제 대기 중인 주문만 결제 실패 처리할 수 있습니다. 현재 상태: " + this.status);
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -204,10 +206,17 @@ public class Orders {
     }
 
     /**
-     * 취소 가능 여부 (COMPLETED 상태만)
+     * 결제 실패 여부
+     */
+    public boolean isPaymentFailed() {
+        return this.status == OrderStatus.PAYMENT_FAILED;
+    }
+
+    /**
+     * 취소 가능 여부 (PENDING 또는 PAYMENT_FAILED 상태만)
      */
     public boolean canCancel() {
-        return this.status == OrderStatus.COMPLETED;
+        return this.status == OrderStatus.PENDING || this.status == OrderStatus.PAYMENT_FAILED;
     }
 
     /**

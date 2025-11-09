@@ -36,7 +36,7 @@ public class OrdersEntityTest {
         assertThat(order.getPointAmount()).isEqualTo(pointAmount);
         assertThat(order.getFinalAmount()).isEqualTo(totalAmount.add(shippingFee).subtract(discountAmount).subtract(pointAmount));
         assertThat(order.getShippingFee()).isEqualTo(shippingFee);
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.COMPLETED);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING);  // 주문 생성 시 PENDING 상태
         assertThat(order.getUsedPointIds()).containsExactlyElementsOf(usedPointIds);
         assertThat(order.getCreatedAt()).isNotNull();
         assertThat(order.getUpdatedAt()).isNotNull();
@@ -77,19 +77,19 @@ public class OrdersEntityTest {
     void paid_invalidStatus_throwsException() {
         Orders order = Orders.createOrder(1L, BigDecimal.valueOf(1000), BigDecimal.valueOf(0),
                 null, null, null, null);
-        order.cancel(); // COMPLETED -> CANCELED 상태 변경
+        order.cancel(); // PENDING -> CANCELED 상태 변경
 
         assertThatThrownBy(order::paid)
                 .isInstanceOf(OrderException.class)
-                .hasMessageContaining("주문 완료된 주문만 결제할 수 있습니다.");
+                .hasMessageContaining("결제 대기 중인 주문만 결제할 수 있습니다.");
     }
 
     @Test
-    void cancel_completedOrder_changesStatus() {
+    void cancel_pendingOrder_changesStatus() {
         Orders order = Orders.createOrder(1L, BigDecimal.valueOf(1000), BigDecimal.valueOf(0),
                 null, null, null, null);
 
-        // COMPLETED 상태에서 취소
+        // PENDING 상태에서 취소
         order.cancel();
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELED);

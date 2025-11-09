@@ -50,7 +50,7 @@ public class CancelOrderUseCase {
                     "해당 주문에 대한 권한이 없습니다.");
         }
 
-        // 3. 주문 취소 가능 여부 확인 (PENDING 또는 PAID 상태만 취소 가능)
+        // 3. 주문 취소 가능 여부 확인 (PENDING, PAID, PAYMENT_FAILED 상태만 취소 가능)
         if (!order.canCancel() && !order.canCancelAfterPaid()) {
             throw new OrderException(ErrorCode.ORDER_INVALID_STATUS_FOR_CANCEL,
                     "취소할 수 없는 주문 상태입니다. 현재 상태: " + order.getStatus());
@@ -123,9 +123,11 @@ public class CancelOrderUseCase {
 
         // 8. 주문 상태 변경
         if (order.isPending()) {
-            order.cancel();  // PENDING -> CANCELED
+            order.cancel();  // PENDING -> CANCELED (결제 전 주문 취소)
         } else if (order.isPaid()) {
-            order.cancelAfterPaid();  // PAID -> CANCELED
+            order.cancelAfterPaid();  // PAID -> CANCELED (결제 후 환불)
+        } else if (order.isPaymentFailed()) {
+            order.cancel();  // PAYMENT_FAILED -> CANCELED (결제 실패 후 취소)
         }
 
         orderRepository.save(order);

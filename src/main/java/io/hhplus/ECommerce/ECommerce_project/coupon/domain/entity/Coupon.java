@@ -321,8 +321,8 @@ public class Coupon {
      */
     public void increaseUsageCount() {
         if (this.usageCount >= this.totalQuantity) {
-            throw new CouponException(ErrorCode.COUPON_ALL_ISSUED,
-                "쿠폰 사용 가능 횟수를 초과했습니다. (총 " + this.totalQuantity + "번 사용 가능)");
+            throw new CouponException(ErrorCode.COUPON_USAGE_LIMIT_EXCEEDED,
+                "쿠폰 사용 가능 횟수를 초과했습니다. 사용 가능 횟수: " + this.totalQuantity + ", 현재 사용 횟수: " + this.usageCount);
         }
         this.usageCount++;
         this.updatedAt = LocalDateTime.now();

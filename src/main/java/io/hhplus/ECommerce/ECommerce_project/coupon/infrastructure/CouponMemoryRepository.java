@@ -95,4 +95,45 @@ public class CouponMemoryRepository implements CouponRepository {
             return Optional.ofNullable(couponMap.get(couponId));
         }
     }
+
+    @Override
+    public Coupon increaseUsageCountWithLock(Long couponId) {
+        Object lock = getLock(couponId);
+
+        synchronized (lock) {
+            Coupon coupon = couponMap.get(couponId);
+            if (coupon != null) {
+                coupon.increaseUsageCount();
+            }
+            return coupon;
+        }
+    }
+
+    /**
+     * 동시성 제어를 위한 쿠폰 검증 및 사용 횟수 증가 (원자적 연산)
+     * 락 안에서 쿠폰 조회, 유효성 검증, 사용 횟수 증가를 모두 수행
+     */
+    @Override
+    public Coupon validateAndIncreaseUsageWithLock(Long couponId) {
+        Object lock = getLock(couponId);
+
+        synchronized (lock) {
+            // 1. 쿠폰 조회
+            Coupon coupon = couponMap.get(couponId);
+
+            // 2. 쿠폰 존재 여부 확인은 호출자에게 위임 (Optional 패턴 사용 권장)
+            if (coupon != null) {
+                // 3. 유효성 검증 (활성화, 기간 등)
+                coupon.validateAvailability();
+
+                // 4. 사용 횟수 증가 (totalQuantity 제한 검증 포함)
+                coupon.increaseUsageCount();
+
+                // 5. 변경사항 저장 (인메모리이므로 이미 반영됨)
+                couponMap.put(couponId, coupon);
+            }
+
+            return coupon;
+        }
+    }
 }

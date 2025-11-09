@@ -1,5 +1,6 @@
 package io.hhplus.ECommerce.ECommerce_project.payment.domain.entity;
 
+import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.PaymentException;
 import io.hhplus.ECommerce.ECommerce_project.payment.domain.enums.PaymentMethod;
 import io.hhplus.ECommerce.ECommerce_project.payment.domain.enums.PaymentStatus;
@@ -27,14 +28,14 @@ public class PaymentEntityTest {
     void createPayment_InvalidAmount_ThrowsException() {
         PaymentException exception = assertThrows(PaymentException.class,
                 () -> Payment.createPayment(1L, BigDecimal.valueOf(-100), PaymentMethod.CARD));
-        assertTrue(exception.getMessage().contains("PAYMENT_AMOUNT_INVALID"));
+        assertEquals(ErrorCode.PAYMENT_AMOUNT_INVALID, exception.getErrorCode());
     }
 
     @Test
     void createPayment_NullOrderId_ThrowsException() {
         PaymentException exception = assertThrows(PaymentException.class,
                 () -> Payment.createPayment(null, BigDecimal.valueOf(1000), PaymentMethod.CARD));
-        assertTrue(exception.getMessage().contains("PAYMENT_ORDER_ID_REQUIRED"));
+        assertEquals(ErrorCode.PAYMENT_ORDER_ID_REQUIRED, exception.getErrorCode());
     }
 
     @Test
@@ -52,7 +53,7 @@ public class PaymentEntityTest {
         payment.complete();
 
         PaymentException exception = assertThrows(PaymentException.class, payment::complete);
-        assertTrue(exception.getMessage().contains("PAYMENT_ALREADY_COMPLETED"));
+        assertEquals(ErrorCode.PAYMENT_ALREADY_COMPLETED, exception.getErrorCode());
     }
 
     @Test
@@ -71,7 +72,7 @@ public class PaymentEntityTest {
         PaymentException exception = assertThrows(PaymentException.class,
                 () -> payment.fail("   "));
 
-        assertTrue(exception.getMessage().contains("PAYMENT_FAILURE_REASON_REQUIRED"));
+        assertEquals(ErrorCode.PAYMENT_FAILURE_REASON_REQUIRED, exception.getErrorCode());
     }
 
     @Test
@@ -88,7 +89,7 @@ public class PaymentEntityTest {
         Payment payment = Payment.createPayment(1L, BigDecimal.valueOf(1000), PaymentMethod.CARD);
         PaymentException exception = assertThrows(PaymentException.class, payment::refund);
 
-        assertTrue(exception.getMessage().contains("PAYMENT_ONLY_COMPLETED_CAN_REFUND"));
+        assertEquals(ErrorCode.PAYMENT_ONLY_COMPLETED_CAN_REFUND, exception.getErrorCode());
     }
 
     @Test
@@ -98,7 +99,7 @@ public class PaymentEntityTest {
         payment.refund();
 
         PaymentException exception = assertThrows(PaymentException.class, payment::refund);
-        assertTrue(exception.getMessage().contains("PAYMENT_ALREADY_REFUNDED"));
+        assertEquals(ErrorCode.PAYMENT_ALREADY_REFUNDED, exception.getErrorCode());
     }
 
 }

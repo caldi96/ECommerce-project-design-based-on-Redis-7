@@ -56,6 +56,27 @@ public class ProductMemoryRepository implements ProductRepository {
         }
     }
 
+    /**
+     * 재고 복구 (비관적 락 적용)
+     * 락 안에서 재고 증가 및 판매량 감소를 원자적으로 수행하여 동시성 문제 해결
+     */
+    @Override
+    public Product restoreStockWithLock(Long productId, int quantity) {
+        // 상품별 락 객체 획득
+        Object lock = lockMap.computeIfAbsent(productId, k -> new Object());
+
+        synchronized (lock) {
+            Product product = productMap.get(productId);
+            if (product != null) {
+                // 재고 증가 및 판매량 감소를 락 안에서 원자적으로 수행
+                product.increaseStock(quantity);
+                product.decreaseSoldCount(quantity);
+                productMap.put(productId, product);
+            }
+            return product;
+        }
+    }
+
     @Override
     public List<Product> findAll() {
         return new ArrayList<>(productMap.values());

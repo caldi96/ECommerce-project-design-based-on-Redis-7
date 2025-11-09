@@ -18,6 +18,15 @@ public interface ProductRepository {
      */
     Optional<Product> findByIdWithLock(Long id);
 
+    /**
+     * 재고 복구 (비관적 락 적용)
+     * 락 안에서 재고 증가 및 판매량 감소를 원자적으로 수행
+     * @param productId 상품 ID
+     * @param quantity 복구할 수량
+     * @return 업데이트된 상품
+     */
+    Product restoreStockWithLock(Long productId, int quantity);
+
     List<Product> findAll();
 
     List<Product> findAllById(List<Long> ids);

@@ -37,4 +37,14 @@ public interface CouponRepository {
      * @return 쿠폰 Optional
      */
     Optional<Coupon> findByIdWithLock(Long couponId);
+
+    Coupon increaseUsageCountWithLock(Long couponId);
+
+    /**
+     * 동시성 제어를 위한 쿠폰 검증 및 사용 횟수 증가 (원자적 연산)
+     * 락 안에서 쿠폰 조회, 유효성 검증, 사용 횟수 증가를 모두 수행
+     * @param couponId 쿠폰 ID
+     * @return 업데이트된 쿠폰
+     */
+    Coupon validateAndIncreaseUsageWithLock(Long couponId);
 }

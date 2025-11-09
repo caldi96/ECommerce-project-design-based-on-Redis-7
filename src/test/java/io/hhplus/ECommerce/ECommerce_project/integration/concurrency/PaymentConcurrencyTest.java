@@ -87,7 +87,7 @@ public class PaymentConcurrencyTest {
     @DisplayName("동일 주문에 대해 동시 결제 시도 시 1번만 성공해야 한다")
     void testConcurrentPaymentForSameOrder() throws InterruptedException {
         // given
-        // 먼저 주문 생성 (COMPLETED 상태)
+        // 먼저 주문 생성 (PENDING 상태)
         CreateOrderFromProductCommand orderCommand = new CreateOrderFromProductCommand(
                 testUser.getId(),
                 testProduct.getId(),
@@ -100,7 +100,7 @@ public class PaymentConcurrencyTest {
 
         // 주문 상태 확인
         Orders order = orderRepository.findById(orderId).orElseThrow();
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.COMPLETED);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING);
 
         // 동시에 5번 결제 시도
         int paymentAttempts = 5;

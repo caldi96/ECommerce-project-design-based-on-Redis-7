@@ -18,7 +18,7 @@ public class DecreaseStockUseCase {
     @Transactional
     public Product execute(DecreaseStockCommand command) {
         // 1. 상품 조회
-        Product product = productRepository.findByIdActive(command.productId())
+        Product product = productRepository.findByIdWithLock(command.productId())
                 .orElseThrow(() -> new ProductException(ErrorCode.PRODUCT_NOT_FOUND));
 
         // 2. 재고 감소 (도메인 메서드 활용)

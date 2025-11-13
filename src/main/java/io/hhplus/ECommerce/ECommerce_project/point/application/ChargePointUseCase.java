@@ -24,7 +24,7 @@ public class ChargePointUseCase {
     @Transactional
     public Point execute(ChargePointCommand command) {
         // 1. 유저 존재 유무 확인 및 조회
-        User user = userRepository.findById(command.userId())
+        User user = userRepository.findByIdWithLock(command.userId())
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
         // 2. 충전 포인트 금액 검증

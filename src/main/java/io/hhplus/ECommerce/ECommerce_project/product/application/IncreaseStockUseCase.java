@@ -18,7 +18,7 @@ public class IncreaseStockUseCase {
     @Transactional
     public Product execute(IncreaseStockCommand command) {
         // 1. 상품 조회
-        Product product = productRepository.findByIdActive(command.productId())
+        Product product = productRepository.findByIdWithLock(command.productId())
                 .orElseThrow(() -> new ProductException(ErrorCode.PRODUCT_NOT_FOUND));
 
         // 2. 재고 증가 (도메인 메서드 활용)

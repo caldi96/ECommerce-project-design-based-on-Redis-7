@@ -41,6 +41,6 @@ public interface PointRepository extends JpaRepository<Point, Long> {
 
     // 포인트 조회 (비관적 락)
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT p FROM Point p WHERE p.id = :pointId")
+    @Query("SELECT p FROM Point p WHERE p.id = :pointId AND p.deletedAt IS NULL")
     Optional<Point> findByIdWithLock(@Param("pointId") Long pointId);
 }

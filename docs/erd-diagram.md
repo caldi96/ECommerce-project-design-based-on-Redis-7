@@ -48,7 +48,7 @@ Table orders {
     discount_amount decimal(10,2) [default: 0]  // 할인 금액 (쿠폰)
     shipping_fee decimal(10,2) [not null, default: 0]  // 배송비
     final_amount decimal(10,2) [not null]  // 최종 결제 금액 = total_amount - discount_amount + shipping_fee - point_amount
-    status varchar [not null, default: 'PENDING'] // PENDING, PAID, PAYMENT_FAILED, CANCELED
+    status varchar [not null] // PENDING, PAID, PAYMENT_FAILED, CANCELED
     coupon_id bigint [ref: > coupons.id]  // 사용된 쿠폰
     point_amount decimal(10,2) [default: 0]  // 사용된 포인트
     created_at timestamp [not null, default: `now()`]
@@ -68,7 +68,7 @@ Table payments {
     amount decimal(10,2) [not null]
     payment_type varchar [not null]  // PAYMENT, REFUND
     payment_method varchar [not null]  // CARD, BANK_TRANSFER, KAKAO_PAY, TOSS 등
-    payment_status varchar [not null, default: 'PENDING']  // PENDING, COMPLETED, FAILED, REFUNDED
+    payment_status varchar [not null]  // PENDING, COMPLETED, FAILED, REFUNDED
     // 실패 사유
     failure_reason text
     created_at timestamp [not null, default: `now()`]
@@ -93,7 +93,7 @@ Table order_items {
     subtotal decimal(10,2) [not null] // quantity * unit_price
     status varchar [not null] // ORDER_PENDING(주문대기), ORDER_COMPLETED(주문완료), ORDER_CANCELED(주문취소), ORDER_RETURNED(반품), ORDER_REFUNDED(환불), PURCHASE_CONFIRMED(구매확정)
     confirmed_at timestamp
-    cancelled_at timestamp
+    canceled_at timestamp
     returned_at timestamp
     refunded_at timestamp
     created_at timestamp [not null, default: `now()`]
@@ -123,9 +123,9 @@ Table points {
     used_amount decimal(10,2) [not null, default: 0]
     point_type varchar [not null]  // CHARGE, REFUNDED
     description varchar  // 적립/사용 사유
-    expired_at timestamp  // 포인트 만료일
     created_at timestamp [not null, default: `now()`]
     updated_at timestamp [not null, default: `now()`]
+    expired_at timestamp  // 포인트 만료일
     used_at timestamp
     deleted_at timestamp
     is_expired boolean
@@ -138,7 +138,7 @@ Table points {
     }
 }
 
-Table pointUsageHistories {
+Table point_usage_histories {
     id bigint [pk]
     point_id bigint [ref: > points.id, not null]
     order_id bigint [ref: > orders.id, not null]

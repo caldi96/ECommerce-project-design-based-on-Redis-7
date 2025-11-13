@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
  * Point와 Order의 N:M 관계를 관리하는 중간 테이블
  */
 @Entity
-@Table(name = "pointUsageHistories")
+@Table(name = "point_usage_histories")
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

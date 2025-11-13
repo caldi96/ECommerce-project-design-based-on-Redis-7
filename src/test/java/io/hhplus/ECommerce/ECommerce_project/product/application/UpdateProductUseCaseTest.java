@@ -4,7 +4,7 @@ import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.ProductException;
 import io.hhplus.ECommerce.ECommerce_project.product.application.command.UpdateProductCommand;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductRepositoryInMemory;
+import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductMemoryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -18,12 +18,12 @@ import static org.mockito.Mockito.*;
 
 public class UpdateProductUseCaseTest {
 
-    private ProductRepositoryInMemory productRepository;
+    private ProductMemoryRepository productRepository;
     private UpdateProductUseCase updateProductUseCase;
 
     @BeforeEach
     void setUp() {
-        productRepository = mock(ProductRepositoryInMemory.class);
+        productRepository = mock(ProductMemoryRepository.class);
         updateProductUseCase = new UpdateProductUseCase(productRepository);
     }
 

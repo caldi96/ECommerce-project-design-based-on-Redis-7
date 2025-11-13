@@ -2,13 +2,13 @@ package io.hhplus.ECommerce.ECommerce_project.cart.application;
 
 import io.hhplus.ECommerce.ECommerce_project.cart.application.command.UpdateQuantityCommand;
 import io.hhplus.ECommerce.ECommerce_project.cart.domain.entity.Cart;
-import io.hhplus.ECommerce.ECommerce_project.cart.domain.repository.CartRepository;
+import io.hhplus.ECommerce.ECommerce_project.cart.infrastructure.CartRepository;
 import io.hhplus.ECommerce.ECommerce_project.cart.presentation.response.UpdateQuantityResponse;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.CartException;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.ProductException;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductRepository;
+import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

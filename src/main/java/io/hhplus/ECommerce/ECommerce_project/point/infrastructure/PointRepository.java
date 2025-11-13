@@ -1,4 +1,4 @@
-package io.hhplus.ECommerce.ECommerce_project.point.domain.repository;
+package io.hhplus.ECommerce.ECommerce_project.point.infrastructure;
 
 import io.hhplus.ECommerce.ECommerce_project.point.domain.entity.Point;
 import jakarta.persistence.LockModeType;

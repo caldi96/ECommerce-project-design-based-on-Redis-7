@@ -2,23 +2,23 @@ package io.hhplus.ECommerce.ECommerce_project.payment.application;
 
 import io.hhplus.ECommerce.ECommerce_project.common.exception.*;
 import io.hhplus.ECommerce.ECommerce_project.coupon.domain.entity.UserCoupon;
-import io.hhplus.ECommerce.ECommerce_project.coupon.domain.repository.UserCouponRepository;
+import io.hhplus.ECommerce.ECommerce_project.coupon.infrastructure.UserCouponRepository;
 import io.hhplus.ECommerce.ECommerce_project.order.domain.entity.OrderItem;
 import io.hhplus.ECommerce.ECommerce_project.order.domain.entity.Orders;
-import io.hhplus.ECommerce.ECommerce_project.order.domain.repository.OrderItemRepository;
-import io.hhplus.ECommerce.ECommerce_project.order.domain.repository.OrderRepository;
+import io.hhplus.ECommerce.ECommerce_project.order.infrastructure.OrderItemRepository;
+import io.hhplus.ECommerce.ECommerce_project.order.infrastructure.OrderRepository;
 import io.hhplus.ECommerce.ECommerce_project.payment.application.command.CreatePaymentCommand;
 import io.hhplus.ECommerce.ECommerce_project.payment.domain.entity.Payment;
-import io.hhplus.ECommerce.ECommerce_project.payment.domain.repository.PaymentRepository;
+import io.hhplus.ECommerce.ECommerce_project.payment.infrastructure.PaymentRepository;
 import io.hhplus.ECommerce.ECommerce_project.payment.presentation.response.CreatePaymentResponse;
 import io.hhplus.ECommerce.ECommerce_project.point.domain.entity.Point;
 import io.hhplus.ECommerce.ECommerce_project.point.domain.entity.PointUsageHistory;
-import io.hhplus.ECommerce.ECommerce_project.point.domain.repository.PointRepository;
-import io.hhplus.ECommerce.ECommerce_project.point.domain.repository.PointUsageHistoryRepository;
+import io.hhplus.ECommerce.ECommerce_project.point.infrastructure.PointRepository;
+import io.hhplus.ECommerce.ECommerce_project.point.infrastructure.PointUsageHistoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductRepository;
+import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductRepository;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
-import io.hhplus.ECommerce.ECommerce_project.user.domain.repository.UserRepository;
+import io.hhplus.ECommerce.ECommerce_project.user.infrastructure.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -80,7 +80,7 @@ public class CreatePaymentUseCase {
                 // 주문 상태를 PAYMENT_FAILED로 변경
                 order.paymentFailed();
 
-                // ✅ Saga 패턴: 주문 생성 시 차감한 리소스 복구 (보상 트랜잭션)
+                // Saga 패턴: 주문 생성 시 차감한 리소스 복구 (보상 트랜잭션)
                 rollbackOrderResources(order);
 
                 // 예외를 다시 던져서 트랜잭션이 롤백되도록 함

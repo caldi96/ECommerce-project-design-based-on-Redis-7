@@ -1,7 +1,7 @@
 package io.hhplus.ECommerce.ECommerce_project.cart.application;
 
 import io.hhplus.ECommerce.ECommerce_project.cart.domain.entity.Cart;
-import io.hhplus.ECommerce.ECommerce_project.cart.domain.repository.CartRepository;
+import io.hhplus.ECommerce.ECommerce_project.cart.infrastructure.CartRepository;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.CartException;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;

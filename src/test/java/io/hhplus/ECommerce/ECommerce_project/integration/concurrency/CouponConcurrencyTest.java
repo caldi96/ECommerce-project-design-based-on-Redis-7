@@ -12,7 +12,7 @@ import io.hhplus.ECommerce.ECommerce_project.coupon.domain.repository.UserCoupon
 import io.hhplus.ECommerce.ECommerce_project.order.application.CreateOrderFromProductUseCase;
 import io.hhplus.ECommerce.ECommerce_project.order.application.command.CreateOrderFromProductCommand;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductRepositoryInMemory;
+import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductMemoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.repository.UserMemoryRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +53,7 @@ public class CouponConcurrencyTest {
     private UserCouponMemoryRepository userCouponRepository;
 
     @Autowired
-    private ProductRepositoryInMemory productRepository;
+    private ProductMemoryRepository productRepository;
 
     @Autowired
     private UserMemoryRepository userRepository;

@@ -1,4 +1,4 @@
-package io.hhplus.ECommerce.ECommerce_project.payment.domain.repository;
+package io.hhplus.ECommerce.ECommerce_project.payment.infrastructure;
 
 import io.hhplus.ECommerce.ECommerce_project.payment.domain.entity.Payment;
 import org.springframework.data.jpa.repository.JpaRepository;

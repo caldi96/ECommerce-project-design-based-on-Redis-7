@@ -1,7 +1,7 @@
 package io.hhplus.ECommerce.ECommerce_project.cart.application;
 
 import io.hhplus.ECommerce.ECommerce_project.cart.domain.entity.Cart;
-import io.hhplus.ECommerce.ECommerce_project.cart.domain.repository.CartRepositoryInMemory;
+import io.hhplus.ECommerce.ECommerce_project.cart.domain.repository.CartMemoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.CartException;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,12 +14,12 @@ import static org.mockito.Mockito.*;
 
 public class DeleteCartUseCaseTest {
 
-    private CartRepositoryInMemory cartRepository;
+    private CartMemoryRepository cartRepository;
     private DeleteCartUseCase deleteCartUseCase;
 
     @BeforeEach
     void setUp() {
-        cartRepository = mock(CartRepositoryInMemory.class);
+        cartRepository = mock(CartMemoryRepository.class);
         deleteCartUseCase = new DeleteCartUseCase(cartRepository);
     }
 

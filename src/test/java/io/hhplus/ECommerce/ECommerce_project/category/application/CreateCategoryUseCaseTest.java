@@ -2,7 +2,7 @@ package io.hhplus.ECommerce.ECommerce_project.category.application;
 
 import io.hhplus.ECommerce.ECommerce_project.category.application.command.CreateCategoryCommand;
 import io.hhplus.ECommerce.ECommerce_project.category.domain.entity.Category;
-import io.hhplus.ECommerce.ECommerce_project.category.domain.repository.CategoryRepositoryInMemory;
+import io.hhplus.ECommerce.ECommerce_project.category.domain.repository.CategoryMemoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.CategoryException;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,7 +19,7 @@ import static org.mockito.Mockito.*;
 public class CreateCategoryUseCaseTest {
 
     @Mock
-    private CategoryRepositoryInMemory categoryRepository;
+    private CategoryMemoryRepository categoryRepository;
 
     private CreateCategoryUseCase createCategoryUseCase;
 

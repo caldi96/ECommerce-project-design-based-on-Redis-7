@@ -1,4 +1,4 @@
-package io.hhplus.ECommerce.ECommerce_project.order.domain.repository;
+package io.hhplus.ECommerce.ECommerce_project.order.infrastructure;
 
 import io.hhplus.ECommerce.ECommerce_project.order.domain.entity.Orders;
 import io.hhplus.ECommerce.ECommerce_project.order.domain.enums.OrderStatus;

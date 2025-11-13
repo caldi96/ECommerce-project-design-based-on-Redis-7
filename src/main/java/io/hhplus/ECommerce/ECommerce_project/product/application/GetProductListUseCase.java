@@ -3,7 +3,7 @@ package io.hhplus.ECommerce.ECommerce_project.product.application;
 import io.hhplus.ECommerce.ECommerce_project.product.application.dto.ProductPageResult;
 import io.hhplus.ECommerce.ECommerce_project.product.application.enums.ProductSortType;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductRepository;
+import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

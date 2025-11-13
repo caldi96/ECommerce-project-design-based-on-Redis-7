@@ -1,11 +1,11 @@
 package io.hhplus.ECommerce.ECommerce_project.product.application;
 
-import io.hhplus.ECommerce.ECommerce_project.category.domain.repository.CategoryRepository;
+import io.hhplus.ECommerce.ECommerce_project.category.infrastructure.CategoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.CategoryException;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
 import io.hhplus.ECommerce.ECommerce_project.product.application.command.CreateProductCommand;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductRepository;
+import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -4,7 +4,7 @@ import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.ProductException;
 import io.hhplus.ECommerce.ECommerce_project.product.application.command.DecreaseStockCommand;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductRepositoryInMemory;
+import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductMemoryRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -17,7 +17,7 @@ import static org.mockito.Mockito.*;
 
 public class DecreaseStockUseCaseTest {
 
-    private final ProductRepositoryInMemory productRepository = mock(ProductRepositoryInMemory.class);
+    private final ProductMemoryRepository productRepository = mock(ProductMemoryRepository.class);
     private final DecreaseStockUseCase useCase = new DecreaseStockUseCase(productRepository);
 
     /**

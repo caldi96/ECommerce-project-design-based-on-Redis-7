@@ -1,12 +1,12 @@
 package io.hhplus.ECommerce.ECommerce_project.cart.application;
 
 import io.hhplus.ECommerce.ECommerce_project.cart.domain.entity.Cart;
-import io.hhplus.ECommerce.ECommerce_project.cart.domain.repository.CartRepositoryInMemory;
+import io.hhplus.ECommerce.ECommerce_project.cart.domain.repository.CartMemoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.cart.presentation.response.GetCartResponse;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.ProductException;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductRepositoryInMemory;
+import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductMemoryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -19,14 +19,14 @@ import static org.mockito.Mockito.*;
 
 public class GetCartUseCaseTest {
 
-    private CartRepositoryInMemory cartRepository;
-    private ProductRepositoryInMemory productRepository;
+    private CartMemoryRepository cartRepository;
+    private ProductMemoryRepository productRepository;
     private GetCartUseCase getCartUseCase;
 
     @BeforeEach
     void setUp() {
-        cartRepository = mock(CartRepositoryInMemory.class);
-        productRepository = mock(ProductRepositoryInMemory.class);
+        cartRepository = mock(CartMemoryRepository.class);
+        productRepository = mock(ProductMemoryRepository.class);
         getCartUseCase = new GetCartUseCase(cartRepository, productRepository);
     }
 

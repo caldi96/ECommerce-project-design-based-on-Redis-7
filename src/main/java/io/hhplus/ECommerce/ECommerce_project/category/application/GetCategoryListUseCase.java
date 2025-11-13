@@ -1,7 +1,7 @@
 package io.hhplus.ECommerce.ECommerce_project.category.application;
 
 import io.hhplus.ECommerce.ECommerce_project.category.domain.entity.Category;
-import io.hhplus.ECommerce.ECommerce_project.category.domain.repository.CategoryRepository;
+import io.hhplus.ECommerce.ECommerce_project.category.infrastructure.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

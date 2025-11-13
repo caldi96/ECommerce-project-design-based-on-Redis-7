@@ -1,4 +1,4 @@
-package io.hhplus.ECommerce.ECommerce_project.cart.domain.repository;
+package io.hhplus.ECommerce.ECommerce_project.cart.infrastructure;
 
 import io.hhplus.ECommerce.ECommerce_project.cart.domain.entity.Cart;
 import org.springframework.data.jpa.repository.JpaRepository;

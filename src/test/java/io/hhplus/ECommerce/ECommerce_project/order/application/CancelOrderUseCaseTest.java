@@ -15,7 +15,7 @@ import io.hhplus.ECommerce.ECommerce_project.point.domain.entity.PointUsageHisto
 import io.hhplus.ECommerce.ECommerce_project.point.domain.repository.PointMemoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.point.domain.repository.PointUsageHistoryMemoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductRepositoryInMemory;
+import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductMemoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.repository.UserMemoryRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +39,7 @@ class CancelOrderUseCaseTest {
     @Mock
     private OrderItemMemoryRepository orderItemRepository;
     @Mock
-    private ProductRepositoryInMemory productRepository;
+    private ProductMemoryRepository productRepository;
     @Mock
     private CouponMemoryRepository couponRepository;
     @Mock

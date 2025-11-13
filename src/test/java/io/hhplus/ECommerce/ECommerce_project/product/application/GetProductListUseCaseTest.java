@@ -4,7 +4,7 @@ import io.hhplus.ECommerce.ECommerce_project.common.SnowflakeIdGenerator;
 import io.hhplus.ECommerce.ECommerce_project.product.application.dto.ProductPageResult;
 import io.hhplus.ECommerce.ECommerce_project.product.application.enums.ProductSortType;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductMemoryRepository;
+import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductMemoryRepositoryImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -17,12 +17,12 @@ import java.time.LocalDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class GetProductListUseCaseTest {
-    private ProductMemoryRepository productRepository;
+    private ProductMemoryRepositoryImpl productRepository;
     private GetProductListUseCase getProductListUseCase;
 
     @BeforeEach
     void setup() {
-        productRepository = new ProductMemoryRepository(new SnowflakeIdGenerator());
+        productRepository = new ProductMemoryRepositoryImpl(new SnowflakeIdGenerator());
         getProductListUseCase = new GetProductListUseCase(productRepository);
 
         // 테스트용 상품 10개 생성

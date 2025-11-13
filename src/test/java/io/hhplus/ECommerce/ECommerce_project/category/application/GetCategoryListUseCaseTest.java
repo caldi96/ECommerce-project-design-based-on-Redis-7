@@ -1,7 +1,7 @@
 package io.hhplus.ECommerce.ECommerce_project.category.application;
 
 import io.hhplus.ECommerce.ECommerce_project.category.domain.entity.Category;
-import io.hhplus.ECommerce.ECommerce_project.category.domain.repository.CategoryRepositoryInMemory;
+import io.hhplus.ECommerce.ECommerce_project.category.domain.repository.CategoryMemoryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,7 +17,7 @@ import static org.mockito.Mockito.*;
 class GetCategoryListUseCaseTest {
 
     @Mock
-    private CategoryRepositoryInMemory categoryRepository;
+    private CategoryMemoryRepository categoryRepository;
 
     private GetCategoryListUseCase getCategoryListUseCase;
 

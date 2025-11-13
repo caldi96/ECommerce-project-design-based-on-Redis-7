@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record CreateOrderFromCartResponse(
+public record CreateOrderResponse(
     Long orderId,
     Long userId,
     BigDecimal totalAmount,
@@ -20,10 +20,10 @@ public record CreateOrderFromCartResponse(
     LocalDateTime orderedAt,
     List<OrderItemResponse> orderItems
 ) {
-    public static CreateOrderFromCartResponse from(Orders order, List<OrderItem> orderItems) {
-        return new CreateOrderFromCartResponse(
+    public static CreateOrderResponse from(Orders order, List<OrderItem> orderItems) {
+        return new CreateOrderResponse(
             order.getId(),
-            order.getUserId(),
+            order.getUser().getId(),
             order.getTotalAmount(),
             order.getShippingFee(),
             order.getDiscountAmount(),
@@ -48,7 +48,7 @@ public record CreateOrderFromCartResponse(
         public static OrderItemResponse from(OrderItem orderItem) {
             return new OrderItemResponse(
                 orderItem.getId(),
-                orderItem.getProductId(),
+                orderItem.getProduct().getId(),
                 orderItem.getProductName(),
                 orderItem.getQuantity(),
                 orderItem.getUnitPrice(),

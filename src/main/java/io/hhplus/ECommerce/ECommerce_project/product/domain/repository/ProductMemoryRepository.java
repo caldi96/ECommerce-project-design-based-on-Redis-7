@@ -6,7 +6,7 @@ import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
 import java.util.List;
 import java.util.Optional;
 
-public interface ProductRepositoryInMemory {
+public interface ProductMemoryRepository {
 
     Product save(Product product);
 

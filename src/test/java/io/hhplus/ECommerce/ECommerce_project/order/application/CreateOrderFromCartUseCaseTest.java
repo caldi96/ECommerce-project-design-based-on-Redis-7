@@ -1,13 +1,13 @@
 package io.hhplus.ECommerce.ECommerce_project.order.application;
 
 import io.hhplus.ECommerce.ECommerce_project.cart.domain.entity.Cart;
-import io.hhplus.ECommerce.ECommerce_project.cart.domain.repository.CartRepositoryInMemory;
+import io.hhplus.ECommerce.ECommerce_project.cart.domain.repository.CartMemoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.PointException;
 import io.hhplus.ECommerce.ECommerce_project.order.application.command.CreateOrderFromCartCommand;
 import io.hhplus.ECommerce.ECommerce_project.point.domain.entity.Point;
 import io.hhplus.ECommerce.ECommerce_project.point.domain.repository.PointMemoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductRepositoryInMemory;
+import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductMemoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.repository.UserMemoryRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,15 +25,15 @@ class CreateOrderFromCartUseCaseTest {
 
     private CreateOrderFromCartUseCase useCase;
     private UserMemoryRepository userRepository;
-    private CartRepositoryInMemory cartRepository;
-    private ProductRepositoryInMemory productRepository;
+    private CartMemoryRepository cartRepository;
+    private ProductMemoryRepository productRepository;
     private PointMemoryRepository pointRepository;
 
     @BeforeEach
     void setup() {
         userRepository = mock(UserMemoryRepository.class);
-        cartRepository = mock(CartRepositoryInMemory.class);
-        productRepository = mock(ProductRepositoryInMemory.class);
+        cartRepository = mock(CartMemoryRepository.class);
+        productRepository = mock(ProductMemoryRepository.class);
         pointRepository = mock(PointMemoryRepository.class);
 
         useCase = new CreateOrderFromCartUseCase(

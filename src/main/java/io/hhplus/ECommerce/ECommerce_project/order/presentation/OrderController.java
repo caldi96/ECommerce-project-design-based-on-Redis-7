@@ -6,7 +6,7 @@ import io.hhplus.ECommerce.ECommerce_project.order.presentation.request.CreateOr
 import io.hhplus.ECommerce.ECommerce_project.order.presentation.request.CreateOrderFromProductRequest;
 import io.hhplus.ECommerce.ECommerce_project.order.presentation.request.GetOrderDetailRequest;
 import io.hhplus.ECommerce.ECommerce_project.order.presentation.request.GetOrderListRequest;
-import io.hhplus.ECommerce.ECommerce_project.order.presentation.response.CreateOrderFromCartResponse;
+import io.hhplus.ECommerce.ECommerce_project.order.presentation.response.CreateOrderResponse;
 import io.hhplus.ECommerce.ECommerce_project.order.presentation.response.GetOrderDetailResponse;
 import io.hhplus.ECommerce.ECommerce_project.order.presentation.response.GetOrderListResponse;
 import jakarta.validation.Valid;
@@ -30,10 +30,10 @@ public class OrderController {
      * 장바구니에서 주문 생성
      */
     @PostMapping("/from-cart")
-    public ResponseEntity<CreateOrderFromCartResponse> createOrderFromCart(
+    public ResponseEntity<CreateOrderResponse> createOrderFromCart(
             @Valid @RequestBody CreateOrderFromCartRequest request
     ) {
-        CreateOrderFromCartResponse response = createOrderFromCartUseCase.execute(request.toCommand());
+        CreateOrderResponse response = createOrderFromCartUseCase.execute(request.toCommand());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -41,10 +41,10 @@ public class OrderController {
      * 상품 페이지에서 직접 주문 생성
      */
     @PostMapping("/from-product")
-    public ResponseEntity<CreateOrderFromCartResponse> createOrderFromProduct(
+    public ResponseEntity<CreateOrderResponse> createOrderFromProduct(
             @Valid @RequestBody CreateOrderFromProductRequest request
     ) {
-        CreateOrderFromCartResponse response = createOrderFromProductUseCase.execute(request.toCommand());
+        CreateOrderResponse response = createOrderFromProductUseCase.execute(request.toCommand());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

@@ -5,12 +5,12 @@ import io.hhplus.ECommerce.ECommerce_project.order.application.command.CreateOrd
 import io.hhplus.ECommerce.ECommerce_project.order.domain.entity.Orders;
 import io.hhplus.ECommerce.ECommerce_project.order.domain.enums.OrderStatus;
 import io.hhplus.ECommerce.ECommerce_project.order.domain.repository.OrderMemoryRepository;
-import io.hhplus.ECommerce.ECommerce_project.order.presentation.response.CreateOrderFromCartResponse;
+import io.hhplus.ECommerce.ECommerce_project.order.presentation.response.CreateOrderResponse;
 import io.hhplus.ECommerce.ECommerce_project.payment.application.CreatePaymentUseCase;
 import io.hhplus.ECommerce.ECommerce_project.payment.application.command.CreatePaymentCommand;
 import io.hhplus.ECommerce.ECommerce_project.payment.domain.enums.PaymentMethod;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductRepositoryInMemory;
+import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductMemoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.repository.UserMemoryRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +48,7 @@ public class PaymentConcurrencyTest {
     private OrderMemoryRepository orderRepository;
 
     @Autowired
-    private ProductRepositoryInMemory productRepository;
+    private ProductMemoryRepository productRepository;
 
     @Autowired
     private UserMemoryRepository userRepository;
@@ -94,7 +94,7 @@ public class PaymentConcurrencyTest {
                 null,
                 null
         );
-        CreateOrderFromCartResponse orderResponse = createOrderFromProductUseCase.execute(orderCommand);
+        CreateOrderResponse orderResponse = createOrderFromProductUseCase.execute(orderCommand);
         Long orderId = orderResponse.orderId();
 
         // 주문 상태 확인
@@ -171,7 +171,7 @@ public class PaymentConcurrencyTest {
                     null,
                     null
             );
-            CreateOrderFromCartResponse orderResponse = createOrderFromProductUseCase.execute(orderCommand);
+            CreateOrderResponse orderResponse = createOrderFromProductUseCase.execute(orderCommand);
             orderIds[i] = orderResponse.orderId();
         }
 
@@ -253,7 +253,7 @@ public class PaymentConcurrencyTest {
                             null,
                             null
                     );
-                    CreateOrderFromCartResponse response = createOrderFromProductUseCase.execute(orderCommand);
+                    CreateOrderResponse response = createOrderFromProductUseCase.execute(orderCommand);
                     orderIds[index] = response.orderId();
                     orderSuccessCount.incrementAndGet();
 
@@ -317,7 +317,7 @@ public class PaymentConcurrencyTest {
                 null,
                 null
         );
-        CreateOrderFromCartResponse orderResponse = createOrderFromProductUseCase.execute(orderCommand);
+        CreateOrderResponse orderResponse = createOrderFromProductUseCase.execute(orderCommand);
         Long orderId = orderResponse.orderId();
 
         // 먼저 한 번 결제 (PAID 상태로 만들기)

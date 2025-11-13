@@ -5,10 +5,10 @@ import io.hhplus.ECommerce.ECommerce_project.order.domain.entity.OrderItem;
 import io.hhplus.ECommerce.ECommerce_project.order.domain.entity.Orders;
 import io.hhplus.ECommerce.ECommerce_project.order.domain.repository.OrderItemMemoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.order.domain.repository.OrderMemoryRepository;
-import io.hhplus.ECommerce.ECommerce_project.order.presentation.response.CreateOrderFromCartResponse;
+import io.hhplus.ECommerce.ECommerce_project.order.presentation.response.CreateOrderResponse;
 import io.hhplus.ECommerce.ECommerce_project.point.domain.repository.PointMemoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductRepositoryInMemory;
+import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductMemoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.repository.UserMemoryRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +38,7 @@ class CreateOrderFromProductUseCaseTest {
     private UserMemoryRepository userRepository;
 
     @Mock
-    private ProductRepositoryInMemory productRepository;
+    private ProductMemoryRepository productRepository;
 
     @Mock
     private PointMemoryRepository pointRepository;
@@ -83,7 +83,7 @@ class CreateOrderFromProductUseCaseTest {
         );
 
         // 실행
-        CreateOrderFromCartResponse response = createOrderUseCase.execute(command);
+        CreateOrderResponse response = createOrderUseCase.execute(command);
 
         // 검증
         assertNotNull(response);

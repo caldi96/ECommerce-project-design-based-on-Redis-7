@@ -1,4 +1,4 @@
-package io.hhplus.ECommerce.ECommerce_project.coupon.domain.repository;
+package io.hhplus.ECommerce.ECommerce_project.coupon.infrastructure;
 
 import io.hhplus.ECommerce.ECommerce_project.coupon.domain.entity.UserCoupon;
 import io.hhplus.ECommerce.ECommerce_project.coupon.domain.enums.UserCouponStatus;

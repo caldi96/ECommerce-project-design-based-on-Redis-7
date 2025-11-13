@@ -2,7 +2,7 @@ package io.hhplus.ECommerce.ECommerce_project.product.application;
 
 import io.hhplus.ECommerce.ECommerce_project.product.application.command.CreateProductCommand;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductRepositoryInMemory;
+import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductMemoryRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -19,7 +19,7 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 public class CreateProductUseCaseTest {
     @Mock
-    ProductRepositoryInMemory productRepository;
+    ProductMemoryRepository productRepository;
 
     @InjectMocks
     CreateProductUseCase createProductUseCase;

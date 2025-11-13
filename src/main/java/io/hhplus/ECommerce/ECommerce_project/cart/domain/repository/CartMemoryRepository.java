@@ -5,7 +5,7 @@ import io.hhplus.ECommerce.ECommerce_project.cart.domain.entity.Cart;
 import java.util.List;
 import java.util.Optional;
 
-public interface CartRepositoryInMemory {
+public interface CartMemoryRepository {
 
     Cart save(Cart cart);
 

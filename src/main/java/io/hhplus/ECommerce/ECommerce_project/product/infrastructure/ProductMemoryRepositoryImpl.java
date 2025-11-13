@@ -3,7 +3,7 @@ package io.hhplus.ECommerce.ECommerce_project.product.infrastructure;
 import io.hhplus.ECommerce.ECommerce_project.common.SnowflakeIdGenerator;
 import io.hhplus.ECommerce.ECommerce_project.product.application.enums.ProductSortType;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductRepositoryInMemory;
+import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductMemoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.OrderException;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Repository
 @RequiredArgsConstructor
-public class ProductMemoryRepository implements ProductRepositoryInMemory {
+public class ProductMemoryRepositoryImpl implements ProductMemoryRepository {
     private final Map<Long, Product> productMap = new ConcurrentHashMap<>();
     private final Map<Long, Object> lockMap = new ConcurrentHashMap<>(); // 상품별 락 객체
     private final SnowflakeIdGenerator idGenerator;

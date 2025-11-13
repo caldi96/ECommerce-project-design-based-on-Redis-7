@@ -2,13 +2,13 @@ package io.hhplus.ECommerce.ECommerce_project.cart.application;
 
 import io.hhplus.ECommerce.ECommerce_project.cart.application.command.CreateCartCommand;
 import io.hhplus.ECommerce.ECommerce_project.cart.domain.entity.Cart;
-import io.hhplus.ECommerce.ECommerce_project.cart.domain.repository.CartRepositoryInMemory;
+import io.hhplus.ECommerce.ECommerce_project.cart.domain.repository.CartMemoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.CartException;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.ProductException;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.UserException;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductRepositoryInMemory;
+import io.hhplus.ECommerce.ECommerce_project.product.domain.repository.ProductMemoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.repository.UserMemoryRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,15 +22,15 @@ import static org.mockito.Mockito.*;
 
 public class CreateCartUseCaseTest {
 
-    private CartRepositoryInMemory cartRepository;
-    private ProductRepositoryInMemory productRepository;
+    private CartMemoryRepository cartRepository;
+    private ProductMemoryRepository productRepository;
     private UserMemoryRepository userRepository;
     private CreateCartUseCase createCartUseCase;
 
     @BeforeEach
     void setUp() {
-        cartRepository = mock(CartRepositoryInMemory.class);
-        productRepository = mock(ProductRepositoryInMemory.class);
+        cartRepository = mock(CartMemoryRepository.class);
+        productRepository = mock(ProductMemoryRepository.class);
         userRepository = mock(UserMemoryRepository.class);
 
         createCartUseCase = new CreateCartUseCase(cartRepository, productRepository, userRepository);

@@ -106,7 +106,7 @@ public class Category extends BaseEntity {
 
     private static void validateDisplayOrder(int displayOrder) {
         if (displayOrder <= 0) {
-            throw new CategoryException(ErrorCode.DISPLAY_ORDER_INVALID);
+            throw new CategoryException(ErrorCode.CATEGORY_DISPLAY_ORDER_INVALID);
         }
     }
 }

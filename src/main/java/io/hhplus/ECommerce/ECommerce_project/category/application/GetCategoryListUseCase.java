@@ -1,7 +1,7 @@
 package io.hhplus.ECommerce.ECommerce_project.category.application;
 
+import io.hhplus.ECommerce.ECommerce_project.category.application.service.CategoryFinderService;
 import io.hhplus.ECommerce.ECommerce_project.category.domain.entity.Category;
-import io.hhplus.ECommerce.ECommerce_project.category.infrastructure.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,10 +12,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GetCategoryListUseCase {
 
-    private final CategoryRepository categoryRepository;
+    private final CategoryFinderService finderService;
 
     @Transactional(readOnly = true)
     public List<Category> execute() {
-        return categoryRepository.findAllByDeletedAtIsNull();
+        // 조회는 FinderService에 위임
+        return finderService.getAllActiveCategories();
     }
 }

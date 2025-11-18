@@ -153,9 +153,10 @@ public enum ErrorCode {
     // ===== Category =====
     CATEGORY_NOT_FOUND("카테고리를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     CATEGORY_NAME_REQUIRED("카테고리명은 필수입니다.", HttpStatus.BAD_REQUEST),
-    DISPLAY_ORDER_INVALID("표시 순서는 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
+    CATEGORY_ID_INVALID("카테고리 ID는 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
+    CATEGORY_DISPLAY_ORDER_INVALID("표시 순서는 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
     CATEGORY_NAME_DUPLICATED("이미 사용 중인 카테고리명입니다.", HttpStatus.CONFLICT),
-    DISPLAY_ORDER_DUPLICATED("이미 사용 중인 표시 순서입니다.", HttpStatus.CONFLICT),
+    CATEGORY_DISPLAY_ORDER_DUPLICATED("이미 사용 중인 표시 순서입니다.", HttpStatus.CONFLICT),
     CATEGORY_ALREADY_DELETED("이미 삭제된 카테고리입니다.", HttpStatus.CONFLICT);
 
     private final String message;

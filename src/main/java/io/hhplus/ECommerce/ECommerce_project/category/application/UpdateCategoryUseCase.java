@@ -1,10 +1,10 @@
 package io.hhplus.ECommerce.ECommerce_project.category.application;
 
 import io.hhplus.ECommerce.ECommerce_project.category.application.command.UpdateCategoryCommand;
+import io.hhplus.ECommerce.ECommerce_project.category.application.service.CategoryFinderService;
+import io.hhplus.ECommerce.ECommerce_project.category.application.service.CategoryValidatorService;
 import io.hhplus.ECommerce.ECommerce_project.category.domain.entity.Category;
-import io.hhplus.ECommerce.ECommerce_project.category.infrastructure.CategoryRepository;
-import io.hhplus.ECommerce.ECommerce_project.common.exception.CategoryException;
-import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
+import io.hhplus.ECommerce.ECommerce_project.category.domain.service.CategoryDomainService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,25 +13,28 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UpdateCategoryUseCase {
 
-    private final CategoryRepository categoryRepository;
+    private final CategoryValidatorService appValidatorService;
+    private final CategoryFinderService finderService;
+    private final CategoryDomainService domainService;
 
     @Transactional
     public Category execute(UpdateCategoryCommand command) {
-        // 1. 카테고리 존재 유무
-        Category category = categoryRepository.findByIdAndDeletedAtIsNull(command.id())
-                .orElseThrow(() -> new CategoryException(ErrorCode.CATEGORY_NOT_FOUND));
 
-        // 2. 카테고리명 중복 체크
-        if (categoryRepository.existsByCategoryNameAndIdNotAndDeletedAtIsNull(command.name(), command.id())) {
-            throw new CategoryException(ErrorCode.CATEGORY_NAME_DUPLICATED);
-        }
+        // 1. ID 값 검증 (Domain Layer)
+        domainService.validateId(command.id());
 
-        // 3. 표시 순서 중복 체크
-        if (categoryRepository.existsByDisplayOrderAndIdNotAndDeletedAtIsNull(command.displayOrder(), command.id())) {
-            throw new CategoryException(ErrorCode.DISPLAY_ORDER_DUPLICATED);
-        }
+        // 2. 카테고리 조회 (Application Layer)
+        Category category = finderService.getActiveCategory(command.id());
 
-        // 4. 도메인 수정
+        // 3. 유효성 검증 (Domain Layer) - 추가됨
+        domainService.validateNameNotEmpty(command.name());
+        domainService.validateDisplayOrderPositive(command.displayOrder());
+
+        // 3. DB 기반 중복 검증 (Application Layer)
+        appValidatorService.validateNameNotDuplicatedExceptSelf(command.name(), command.id());
+        appValidatorService.validateDisplayOrderNotDuplicatedExceptSelf(command.displayOrder(), command.id());
+
+        // 4. 도메인 수정 (Entity 내부에서 순수 검증 수행)
         category.updateCategoryName(command.name());
         category.updateDisplayOrder(command.displayOrder());
 

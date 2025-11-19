@@ -81,7 +81,10 @@ class CreateOrderFromCartUseCaseIntegrationTest {
     @BeforeEach
     void setUp() {
         // 테스트 사용자 생성
-        testUser = new User("testuser", "password123", BigDecimal.ZERO, null, null);
+        testUser = new User();
+        testUser.setUsername("testuser");
+        testUser.setPassword("password123");
+        testUser.setPointBalance(BigDecimal.ZERO);
         testUser = userRepository.save(testUser);
 
         // 테스트 카테고리 생성
@@ -359,7 +362,10 @@ class CreateOrderFromCartUseCaseIntegrationTest {
     @DisplayName("다른 사용자의 장바구니로 주문 생성 시 실패한다")
     void createOrder_fail_otherUserCart() {
         // Given
-        User otherUser = new User("otheruser", "password456", BigDecimal.ZERO, null, null);
+        User otherUser = new User();
+        otherUser.setUsername("otheruser");
+        otherUser.setPassword("password456");
+        otherUser.setPointBalance(BigDecimal.ZERO);
         otherUser = userRepository.save(otherUser);
 
         Cart cart = Cart.createCart(otherUser, testProduct1, 2);

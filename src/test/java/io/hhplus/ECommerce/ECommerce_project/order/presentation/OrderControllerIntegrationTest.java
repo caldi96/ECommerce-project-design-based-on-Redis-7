@@ -79,7 +79,10 @@ class OrderControllerIntegrationTest {
     @BeforeEach
     void setUp() {
         // 테스트 사용자 생성 (포인트 0으로 시작)
-        testUser = new User("testuser", "password123", BigDecimal.ZERO, null, null);
+        testUser = new User();
+        testUser.setUsername("testuser");
+        testUser.setPassword("password123");
+        testUser.setPointBalance(BigDecimal.ZERO);
         testUser = userRepository.save(testUser);
 
         // 테스트 카테고리 생성

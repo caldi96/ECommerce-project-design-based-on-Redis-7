@@ -6,6 +6,7 @@ import io.hhplus.ECommerce.ECommerce_project.order.application.CreateOrderFromPr
 import io.hhplus.ECommerce.ECommerce_project.order.application.command.CreateOrderFromProductCommand;
 import io.hhplus.ECommerce.ECommerce_project.order.domain.entity.Orders;
 import io.hhplus.ECommerce.ECommerce_project.order.domain.enums.OrderStatus;
+import io.hhplus.ECommerce.ECommerce_project.order.infrastructure.OrderItemRepository;
 import io.hhplus.ECommerce.ECommerce_project.order.infrastructure.OrderRepository;
 import io.hhplus.ECommerce.ECommerce_project.order.presentation.response.CreateOrderResponse;
 import io.hhplus.ECommerce.ECommerce_project.payment.application.CreatePaymentUseCase;
@@ -35,7 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 결제 동시성 통합 테스트 (JPA 기반)
+ * 결제 동시성 통합 테스트
  *
  * 시나리오:
  * - 같은 주문을 동시에 여러 번 결제 시도 (1번만 성공해야 함)
@@ -59,6 +60,9 @@ public class PaymentConcurrencyTest {
     private OrderRepository orderRepository;
 
     @Autowired
+    private OrderItemRepository orderItemRepository;
+
+    @Autowired
     private ProductRepository productRepository;
 
     @Autowired
@@ -72,8 +76,9 @@ public class PaymentConcurrencyTest {
 
     @BeforeEach
     void setUp() {
-        // 기존 데이터 정리
+        // 기존 데이터 정리 (외래 키 제약조건 고려)
         paymentRepository.deleteAll();
+        orderItemRepository.deleteAll();
         orderRepository.deleteAll();
         productRepository.deleteAll();
         categoryRepository.deleteAll();
@@ -89,7 +94,7 @@ public class PaymentConcurrencyTest {
                 "결제 테스트 상품",
                 "동시성 테스트용",
                 BigDecimal.valueOf(10000),
-                1000,  // 충분한 재고
+                1000,
                 1,
                 10
         );
@@ -100,8 +105,10 @@ public class PaymentConcurrencyTest {
     @DisplayName("같은 주문을 동시에 여러 번 결제 시도할 때 1번만 성공해야 한다")
     void testConcurrentPaymentForSameOrder() throws InterruptedException {
         // Given
-        // 사용자 생성
-        User user = new User("payment_user", "password", BigDecimal.ZERO, null, null);
+        User user = new User();
+        user.setUsername("payment_user");
+        user.setPassword("password");
+        user.setPointBalance(BigDecimal.ZERO);
         user = userRepository.save(user);
 
         // 주문 생성
@@ -115,17 +122,19 @@ public class PaymentConcurrencyTest {
         CreateOrderResponse orderResponse = createOrderFromProductUseCase.execute(orderCommand);
         final Long orderId = orderResponse.orderId();
 
-        int attemptCount = 5;  // 5번 동시 결제 시도
+        int attemptCount = 5;
         ExecutorService executorService = Executors.newFixedThreadPool(attemptCount);
-        CountDownLatch latch = new CountDownLatch(attemptCount);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch completionLatch = new CountDownLatch(attemptCount);
 
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger failCount = new AtomicInteger(0);
 
-        // When: 같은 주문을 동시에 5번 결제 시도
+        // When
         for (int i = 0; i < attemptCount; i++) {
             executorService.submit(() -> {
                 try {
+                    startLatch.await();
                     CreatePaymentCommand paymentCommand = new CreatePaymentCommand(
                             orderId,
                             PaymentMethod.CARD
@@ -135,16 +144,16 @@ public class PaymentConcurrencyTest {
                 } catch (Exception e) {
                     failCount.incrementAndGet();
                 } finally {
-                    latch.countDown();
+                    completionLatch.countDown();
                 }
             });
         }
 
-        latch.await();
+        startLatch.countDown();
+        completionLatch.await();
         executorService.shutdown();
 
         // Then
-        // 1번만 성공해야 함
         assertThat(successCount.get()).isEqualTo(1);
         assertThat(failCount.get()).isEqualTo(4);
 
@@ -162,14 +171,17 @@ public class PaymentConcurrencyTest {
     @DisplayName("여러 주문을 동시에 결제할 때 모두 성공해야 한다")
     void testConcurrentPaymentForMultipleOrders() throws InterruptedException {
         // Given
-        int orderCount = 10;  // 10개의 주문 생성
+        int orderCount = 10;
 
         // 사용자들 생성 및 주문 생성
         User[] users = new User[orderCount];
         Long[] orderIds = new Long[orderCount];
 
         for (int i = 0; i < orderCount; i++) {
-            users[i] = new User("multi_payment_user_" + i, "password", BigDecimal.ZERO, null, null);
+            users[i] = new User();
+            users[i].setUsername("multi_payment_user_" + i);
+            users[i].setPassword("password");
+            users[i].setPointBalance(BigDecimal.ZERO);
             users[i] = userRepository.save(users[i]);
 
             CreateOrderFromProductCommand orderCommand = new CreateOrderFromProductCommand(
@@ -184,16 +196,18 @@ public class PaymentConcurrencyTest {
         }
 
         ExecutorService executorService = Executors.newFixedThreadPool(orderCount);
-        CountDownLatch latch = new CountDownLatch(orderCount);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch completionLatch = new CountDownLatch(orderCount);
 
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger failCount = new AtomicInteger(0);
 
-        // When: 10개의 주문을 동시에 결제
+        // When
         for (int i = 0; i < orderCount; i++) {
             final int index = i;
             executorService.submit(() -> {
                 try {
+                    startLatch.await();
                     CreatePaymentCommand paymentCommand = new CreatePaymentCommand(
                             orderIds[index],
                             PaymentMethod.CARD
@@ -203,16 +217,16 @@ public class PaymentConcurrencyTest {
                 } catch (Exception e) {
                     failCount.incrementAndGet();
                 } finally {
-                    latch.countDown();
+                    completionLatch.countDown();
                 }
             });
         }
 
-        latch.await();
+        startLatch.countDown();
+        completionLatch.await();
         executorService.shutdown();
 
         // Then
-        // 모두 성공해야 함
         assertThat(successCount.get()).isEqualTo(orderCount);
         assertThat(failCount.get()).isEqualTo(0);
 
@@ -229,87 +243,20 @@ public class PaymentConcurrencyTest {
     }
 
     @Test
-    @DisplayName("서로 다른 주문을 동시에 결제할 때 각각 독립적으로 처리되어야 한다")
-    void testConcurrentPaymentIndependence() throws InterruptedException {
-        // Given
-        int userCount = 20;
-
-        // 각 사용자별 주문 생성
-        User[] users = new User[userCount];
-        Long[] orderIds = new Long[userCount];
-
-        for (int i = 0; i < userCount; i++) {
-            users[i] = new User("independent_user_" + i, "password", BigDecimal.ZERO, null, null);
-            users[i] = userRepository.save(users[i]);
-
-            CreateOrderFromProductCommand orderCommand = new CreateOrderFromProductCommand(
-                    users[i].getId(),
-                    testProduct.getId(),
-                    1,
-                    null,
-                    null
-            );
-            CreateOrderResponse orderResponse = createOrderFromProductUseCase.execute(orderCommand);
-            orderIds[i] = orderResponse.orderId();
-        }
-
-        ExecutorService executorService = Executors.newFixedThreadPool(userCount);
-        CountDownLatch latch = new CountDownLatch(userCount);
-
-        AtomicInteger successCount = new AtomicInteger(0);
-        AtomicInteger failCount = new AtomicInteger(0);
-
-        // When: 20개의 서로 다른 주문을 동시에 결제
-        for (int i = 0; i < userCount; i++) {
-            final int index = i;
-            executorService.submit(() -> {
-                try {
-                    CreatePaymentCommand paymentCommand = new CreatePaymentCommand(
-                            orderIds[index],
-                            PaymentMethod.CARD
-                    );
-                    createPaymentUseCase.execute(paymentCommand);
-                    successCount.incrementAndGet();
-                } catch (Exception e) {
-                    failCount.incrementAndGet();
-                } finally {
-                    latch.countDown();
-                }
-            });
-        }
-
-        latch.await();
-        executorService.shutdown();
-
-        // Then
-        // 모두 성공해야 함
-        assertThat(successCount.get()).isEqualTo(userCount);
-        assertThat(failCount.get()).isEqualTo(0);
-
-        // 모든 Payment가 정상적으로 생성되었는지 확인
-        List<Payment> allPayments = paymentRepository.findAll();
-        assertThat(allPayments).hasSize(userCount);
-
-        // 모든 주문이 PAID 상태인지 확인
-        for (Long orderId : orderIds) {
-            Orders order = orderRepository.findById(orderId).orElseThrow();
-            assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
-        }
-    }
-
-    @Test
     @DisplayName("동일 사용자가 여러 주문을 동시에 결제할 때 모두 성공해야 한다")
     void testConcurrentPaymentBySameUser() throws InterruptedException {
         // Given
-        // 사용자 1명 생성
-        User user = new User("same_user_payment", "password", BigDecimal.ZERO, null, null);
+        User user = new User();
+        user.setUsername("same_user_payment");
+        user.setPassword("password");
+        user.setPointBalance(BigDecimal.ZERO);
         user = userRepository.save(user);
         final Long userId = user.getId();
 
         int orderCount = 5;
         Long[] orderIds = new Long[orderCount];
 
-        // 같은 사용자의 주문 5개 생성
+        // 같은 사용자의 주문 생성
         for (int i = 0; i < orderCount; i++) {
             CreateOrderFromProductCommand orderCommand = new CreateOrderFromProductCommand(
                     userId,
@@ -323,16 +270,18 @@ public class PaymentConcurrencyTest {
         }
 
         ExecutorService executorService = Executors.newFixedThreadPool(orderCount);
-        CountDownLatch latch = new CountDownLatch(orderCount);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch completionLatch = new CountDownLatch(orderCount);
 
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger failCount = new AtomicInteger(0);
 
-        // When: 같은 사용자의 5개 주문을 동시에 결제
+        // When
         for (int i = 0; i < orderCount; i++) {
             final int index = i;
             executorService.submit(() -> {
                 try {
+                    startLatch.await();
                     CreatePaymentCommand paymentCommand = new CreatePaymentCommand(
                             orderIds[index],
                             PaymentMethod.CARD
@@ -342,16 +291,16 @@ public class PaymentConcurrencyTest {
                 } catch (Exception e) {
                     failCount.incrementAndGet();
                 } finally {
-                    latch.countDown();
+                    completionLatch.countDown();
                 }
             });
         }
 
-        latch.await();
+        startLatch.countDown();
+        completionLatch.await();
         executorService.shutdown();
 
         // Then
-        // 모두 성공해야 함
         assertThat(successCount.get()).isEqualTo(orderCount);
         assertThat(failCount.get()).isEqualTo(0);
 

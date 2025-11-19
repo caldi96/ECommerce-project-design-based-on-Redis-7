@@ -65,6 +65,7 @@ public class UserCoupon extends BaseEntity {
         LocalDateTime now = LocalDateTime.now();
 
         return new UserCoupon(
+            null,                           // version (JPA 관리)
             coupon,
             user,
             UserCouponStatus.AVAILABLE,     // 발급 시 사용 가능 상태

@@ -76,6 +76,7 @@ public class Point extends BaseEntity {
         LocalDateTime expiredAt = LocalDateTime.now().plusYears(1);  // 1년 후 만료
 
         return new Point(
+            null,   // version (JPA 관리)
             user,
             amount,
             BigDecimal.ZERO,  // usedAmount (초기값 0)
@@ -101,6 +102,7 @@ public class Point extends BaseEntity {
         LocalDateTime expiredAt = LocalDateTime.now().plusYears(1);
 
         return new Point(
+            null,   // version (JPA 관리)
             user,
             amount,
             BigDecimal.ZERO,  // usedAmount (초기값 0)

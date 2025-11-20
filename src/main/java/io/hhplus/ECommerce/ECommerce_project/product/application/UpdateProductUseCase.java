@@ -1,13 +1,11 @@
 package io.hhplus.ECommerce.ECommerce_project.product.application;
 
+import io.hhplus.ECommerce.ECommerce_project.category.application.service.CategoryFinderService;
 import io.hhplus.ECommerce.ECommerce_project.category.domain.entity.Category;
-import io.hhplus.ECommerce.ECommerce_project.category.infrastructure.CategoryRepository;
-import io.hhplus.ECommerce.ECommerce_project.common.exception.CategoryException;
-import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
-import io.hhplus.ECommerce.ECommerce_project.common.exception.ProductException;
 import io.hhplus.ECommerce.ECommerce_project.product.application.command.UpdateProductCommand;
+import io.hhplus.ECommerce.ECommerce_project.product.application.service.ProductFinderService;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductRepository;
+import io.hhplus.ECommerce.ECommerce_project.product.domain.service.ProductDomainService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,14 +14,18 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UpdateProductUseCase {
 
-    private final ProductRepository productRepository;
-    private final CategoryRepository categoryRepository;
+    private final ProductDomainService productDomainService;
+    private final ProductFinderService productFinderService;
+    private final CategoryFinderService categoryFinderService;
 
     @Transactional
     public Product execute(UpdateProductCommand command) {
+
+        // 1. ID 검증
+        productDomainService.validateId(command.id());
+
         // 1. 기존 상품 조회
-        Product product = productRepository.findByIdActive(command.id())
-                .orElseThrow(() -> new ProductException(ErrorCode.PRODUCT_NOT_FOUND));
+        Product product = productFinderService.getActiveProduct(command.id());
 
         // 2. 도메인 메서드를 통해 각 필드 업데이트
         if (command.name() != null) {
@@ -39,9 +41,7 @@ public class UpdateProductUseCase {
         }
 
         if (command.categoryId() != null) {
-//            product.updateCategoryId(command.categoryId());
-            Category category = categoryRepository.findByIdAndDeletedAtIsNull(command.categoryId())
-                    .orElseThrow(() -> new CategoryException(ErrorCode.CATEGORY_NOT_FOUND));
+            Category category = categoryFinderService.getActiveCategory(command.categoryId());
             product.updateCategory(category);
         }
 

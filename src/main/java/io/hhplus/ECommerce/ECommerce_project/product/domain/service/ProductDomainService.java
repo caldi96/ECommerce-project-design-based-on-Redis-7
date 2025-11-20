@@ -15,4 +15,13 @@ public class ProductDomainService {
             throw new ProductException(ErrorCode.PRODUCT_ID_INVALID);
         }
     }
+
+    /**
+     * 수량 값이 유효한지 검증
+     */
+    public void validateQuantity(Integer quantity) {
+        if (quantity == null || quantity <= 0) {
+            throw new ProductException(ErrorCode.PRODUCT_QUANTITY_INVALID);
+        }
+    }
 }

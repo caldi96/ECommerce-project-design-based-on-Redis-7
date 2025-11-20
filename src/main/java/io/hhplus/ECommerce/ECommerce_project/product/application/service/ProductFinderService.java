@@ -16,10 +16,18 @@ public class ProductFinderService {
     private final ProductRepository productRepository;
 
     /**
+     * 상품 단건 조회
+     */
+    public Product getProduct(Long productId) {
+        return productRepository.findById(productId)
+                .orElseThrow(() -> new ProductException(ErrorCode.PRODUCT_NOT_FOUND));
+    }
+
+    /**
      * 삭제되지 않은 상품 조회
      */
-    public Product getActiveProduct(Long id) {
-        return productRepository.findByIdActive(id)
+    public Product getActiveProduct(Long productId) {
+        return productRepository.findByIdActive(productId)
                 .orElseThrow(() -> new ProductException(ErrorCode.PRODUCT_NOT_FOUND));
     }
 

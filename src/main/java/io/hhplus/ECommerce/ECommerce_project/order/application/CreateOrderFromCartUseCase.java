@@ -1,12 +1,17 @@
 package io.hhplus.ECommerce.ECommerce_project.order.application;
 
+import io.hhplus.ECommerce.ECommerce_project.cart.application.service.CartFinderService;
 import io.hhplus.ECommerce.ECommerce_project.cart.domain.entity.Cart;
+import io.hhplus.ECommerce.ECommerce_project.cart.domain.service.CartDomainService;
 import io.hhplus.ECommerce.ECommerce_project.cart.infrastructure.CartRepository;
-import io.hhplus.ECommerce.ECommerce_project.common.exception.*;
+import io.hhplus.ECommerce.ECommerce_project.common.exception.CouponException;
+import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
+import io.hhplus.ECommerce.ECommerce_project.coupon.application.service.CouponFinderService;
+import io.hhplus.ECommerce.ECommerce_project.coupon.application.service.UserCouponFinderService;
+import io.hhplus.ECommerce.ECommerce_project.coupon.application.service.UserCouponUsageService;
 import io.hhplus.ECommerce.ECommerce_project.coupon.domain.entity.Coupon;
 import io.hhplus.ECommerce.ECommerce_project.coupon.domain.entity.UserCoupon;
-import io.hhplus.ECommerce.ECommerce_project.coupon.infrastructure.CouponRepository;
-import io.hhplus.ECommerce.ECommerce_project.coupon.infrastructure.UserCouponRepository;
+import io.hhplus.ECommerce.ECommerce_project.coupon.domain.service.CouponDomainService;
 import io.hhplus.ECommerce.ECommerce_project.order.application.command.CreateOrderFromCartCommand;
 import io.hhplus.ECommerce.ECommerce_project.order.application.dto.ValidatedOrderFromCartData;
 import io.hhplus.ECommerce.ECommerce_project.order.domain.constants.ShippingPolicy;
@@ -15,15 +20,17 @@ import io.hhplus.ECommerce.ECommerce_project.order.domain.entity.Orders;
 import io.hhplus.ECommerce.ECommerce_project.order.infrastructure.OrderItemRepository;
 import io.hhplus.ECommerce.ECommerce_project.order.infrastructure.OrderRepository;
 import io.hhplus.ECommerce.ECommerce_project.order.presentation.response.CreateOrderResponse;
+import io.hhplus.ECommerce.ECommerce_project.point.application.service.PointFinderService;
+import io.hhplus.ECommerce.ECommerce_project.point.application.service.PointUsageService;
 import io.hhplus.ECommerce.ECommerce_project.point.domain.entity.Point;
-import io.hhplus.ECommerce.ECommerce_project.point.domain.entity.PointUsageHistory;
-import io.hhplus.ECommerce.ECommerce_project.point.infrastructure.PointRepository;
-import io.hhplus.ECommerce.ECommerce_project.point.infrastructure.PointUsageHistoryRepository;
+import io.hhplus.ECommerce.ECommerce_project.point.domain.service.PointDomainService;
+import io.hhplus.ECommerce.ECommerce_project.product.application.service.ProductFinderService;
 import io.hhplus.ECommerce.ECommerce_project.product.application.service.StockService;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductRepository;
+import io.hhplus.ECommerce.ECommerce_project.product.domain.service.ProductDomainService;
+import io.hhplus.ECommerce.ECommerce_project.user.application.service.UserFinderService;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
-import io.hhplus.ECommerce.ECommerce_project.user.infrastructure.UserRepository;
+import io.hhplus.ECommerce.ECommerce_project.user.domain.service.UserDomainService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.retry.annotation.Backoff;
@@ -43,14 +50,21 @@ public class CreateOrderFromCartUseCase {
 
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
-    private final UserRepository userRepository;
     private final CartRepository cartRepository;
-    private final ProductRepository productRepository;
-    private final CouponRepository couponRepository;
-    private final UserCouponRepository userCouponRepository;
-    private final PointRepository pointRepository;
-    private final PointUsageHistoryRepository pointUsageHistoryRepository;
     private final StockService stockService;
+    private final UserDomainService userDomainService;
+    private final UserFinderService userFinderService;
+    private final CartDomainService cartDomainService;
+    private final CartFinderService cartFinderService;
+    private final ProductDomainService productDomainService;
+    private final ProductFinderService productFinderService;
+    private final CouponDomainService couponDomainService;
+    private final CouponFinderService couponFinderService;
+    private final UserCouponFinderService userCouponFinderService;
+    private final UserCouponUsageService userCouponUsageService;
+    private final PointDomainService pointDomainService;
+    private final PointFinderService pointFinderService;
+    private final PointUsageService pointUsageService;
 
     public CreateOrderResponse execute(CreateOrderFromCartCommand command) {
 
@@ -71,20 +85,24 @@ public class CreateOrderFromCartUseCase {
     }
 
     private ValidatedOrderFromCartData validateAndCalculate(CreateOrderFromCartCommand command) {
+
+        // 1. ID 검증
+        userDomainService.validateId(command.userId());
+
         // 1. 사용자 확인
-        User user = userRepository.findById(command.userId())
-                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
+        User user = userFinderService.getUser(command.userId());
 
         // 2. 장바구니 아이템 조회 (cartItemIds)
         List<Cart> cartList = command.cartItemIds().stream()
                 .map(cartId -> {
-                    Cart cart = cartRepository.findById(cartId)
-                            .orElseThrow(() -> new CartException(ErrorCode.CART_NOT_FOUND));
+
+                    // cartId 검증
+                    cartDomainService.validateId(cartId);
+
+                    Cart cart = cartFinderService.getCart(cartId);
 
                     // 유저의 카트인지 확인
-                    if (!cart.isSameUser(command.userId())) {
-                        throw new CartException(ErrorCode.CART_ACCESS_DENIED);
-                    }
+                    cartDomainService.validateSameUser(cart, user);
 
                     return cart;
                 })
@@ -112,9 +130,12 @@ public class CreateOrderFromCartUseCase {
             Long productId = entry.getKey();
             Integer totalQuantity = entry.getValue();
 
+            // 상품 도메인 검증
+            productDomainService.validateId(productId);
+            productDomainService.validateQuantity(totalQuantity);
+
             // 상품 조회 및 검증 (락 없이)
-            Product product = productRepository.findById(productId)
-                    .orElseThrow(() -> new ProductException(ErrorCode.PRODUCT_NOT_FOUND));
+            Product product = productFinderService.getProduct(productId);
 
             // 주문 가능 여부 검증 (비활성/재고/최소/최대 주문량 체크)
             product.validateOrder(totalQuantity);
@@ -135,14 +156,17 @@ public class CreateOrderFromCartUseCase {
         Coupon coupon = null;
 
         if (command.couponId() != null) {
+
+            // 도메인 검증
+            couponDomainService.validateId(command.couponId());
+
             // 6-1. 사용자 쿠폰 조회
-            UserCoupon userCoupon = userCouponRepository
-                    .findByUser_IdAndCoupon_Id(command.userId(), command.couponId())
+            UserCoupon userCoupon = userCouponFinderService
+                    .getUserCouponByUserIdAndCouponId(command.userId(), command.couponId())
                     .orElseThrow(() -> new CouponException(ErrorCode.USER_COUPON_NOT_FOUND));
 
             // 6-2. 쿠폰 조회 및 검증
-            coupon = couponRepository.findById(command.couponId())
-                    .orElseThrow(() -> new CouponException(ErrorCode.COUPON_NOT_FOUND));
+            coupon = couponFinderService.getCoupon(command.couponId());
 
             // 6-3. 쿠폰 유효성 검증 (활성화, 기간 등)
             coupon.validateAvailability();
@@ -154,16 +178,12 @@ public class CreateOrderFromCartUseCase {
             discountAmount = coupon.calculateDiscountAmount(totalAmount);
         }
 
-        // 7. 포인트 사용 (포인트 사용시에만)
-        BigDecimal pointAmount = BigDecimal.ZERO;
-        List<Point> pointsToUpdate = new ArrayList<>();  // 사용될 포인트들
-        List<BigDecimal> pointUsageAmounts = new ArrayList<>();  // 각 포인트에서 사용할 금액
-
+        // 7. 포인트 잔액 검증 (사전 검증 - 재고 차감 전에 포인트 부족 감지)
         if (command.pointAmount() != null
                 && command.pointAmount().compareTo(BigDecimal.ZERO) > 0) {
 
             // 사용 가능한 포인트 조회
-            List<Point> availablePoints = pointRepository.findAvailablePointsByUserId(command.userId());
+            List<Point> availablePoints = pointFinderService.getAvailablePoints(command.userId());
 
             // 사용 가능한 포인트 합계 계산 (남은 금액 기준)
             BigDecimal totalAvailablePoint = availablePoints.stream()
@@ -171,9 +191,7 @@ public class CreateOrderFromCartUseCase {
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             // 포인트 잔액 검증
-            if (totalAvailablePoint.compareTo(command.pointAmount()) < 0) {
-                throw new PointException(ErrorCode.POINT_INSUFFICIENT_POINT);
-            }
+            pointDomainService.validateAvailablePoint(totalAvailablePoint, command.pointAmount());
         }
 
         return new ValidatedOrderFromCartData(
@@ -198,110 +216,41 @@ public class CreateOrderFromCartUseCase {
     ) {
 
         // 1. 사용자 확인 (낙관적 락 - 본인만 접근하는 리소스)
-        User user = userRepository.findById(command.userId())
-                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
+        User user = userFinderService.getUser(command.userId());
 
-        // 2. 쿠폰 처리
+        // 2. 쿠폰 처리 (서비스에 위임)
         BigDecimal discountAmount = BigDecimal.ZERO;
         Coupon coupon = null;
 
         if (command.couponId() != null) {
-            // 2-1. 사용자 쿠폰 조회 (낙관적 락 - 본인만 접근하는 리소스)
-            UserCoupon userCoupon = userCouponRepository
-                    .findByUser_IdAndCoupon_Id(command.userId(), command.couponId())
-                    .orElseThrow(() -> new CouponException(ErrorCode.USER_COUPON_NOT_FOUND));
-
-            // 2-2. 쿠폰 조회 및 검증
-            coupon = couponRepository.findById(command.couponId())
-                    .orElseThrow(() -> new CouponException(ErrorCode.COUPON_NOT_FOUND));
-
-            // 2-3. 쿠폰 유효성 검증 (활성화, 기간 등)
-            coupon.validateAvailability();
-
-            // 2-4. 사용자 쿠폰 사용 가능 여부 확인
-            userCoupon.validateCanUse(coupon.getPerUserLimit());
-
-            // 2-5. 할인 금액 계산
+            coupon = userCouponUsageService.useCoupon(command.userId(), command.couponId());
             discountAmount = validatedOrderFromCartData.discountAmount();
-
-            // 2-6. 쿠폰 사용 처리 (usedCount 증가)
-            userCoupon.use(coupon.getPerUserLimit());
-            userCouponRepository.save(userCoupon); // 테스트 코드 dirty check 오류때문에 추가
         }
 
-        // 3. 포인트 사용 (포인트 사용시에만)
-        BigDecimal pointAmount = BigDecimal.ZERO;
-        List<Point> pointsToUpdate = new ArrayList<>();  // 사용될 포인트들
-        List<BigDecimal> pointUsageAmounts = new ArrayList<>();  // 각 포인트에서 사용할 금액
-
-        if (command.pointAmount() != null
-                && command.pointAmount().compareTo(BigDecimal.ZERO) > 0) {
-
-            // 사용 가능한 포인트 조회
-            List<Point> availablePoints = pointRepository.findAvailablePointsByUserId(command.userId());
-
-            // 포인트 사용 처리 (선입선출, 낙관적 락 - 본인만 접근하는 리소스)
-            BigDecimal remainingPointToUse = command.pointAmount();
-            for (Point point : availablePoints) {
-                if (remainingPointToUse.compareTo(BigDecimal.ZERO) <= 0) {
-                    break;
-                }
-
-                // 해당 포인트에서 사용할 수 있는 금액 계산
-                BigDecimal availableAmount = point.getRemainingAmount();
-                BigDecimal pointToUse = availableAmount.min(remainingPointToUse);
-
-                // 나중에 사용 이력 생성을 위해 임시 저장
-                pointUsageAmounts.add(pointToUse);
-                pointsToUpdate.add(point);
-
-                remainingPointToUse = remainingPointToUse.subtract(pointToUse);
-            }
-
-            pointAmount = command.pointAmount();
-        }
-
-        // 4. Order 생성 (최종 금액은 Order에서 create할때 계산)
+        // 3. Order 생성 (최종 금액은 Order에서 create할때 계산)
         Orders order = Orders.createOrder(
                 user,
                 coupon,
                 validatedOrderFromCartData.totalAmount(),            // 상품 총액
                 validatedOrderFromCartData.shippingFee(),            // 배송비
                 discountAmount,         // 쿠폰 할인 금액
-                pointAmount             // 포인트 사용 금액
+                command.pointAmount()   // 포인트 사용 금액
         );
 
-        // 5. 저장
+        // 4. 저장
         Orders savedOrder = orderRepository.save(order);
 
-        // 6. 포인트 사용 이력 저장 (Order ID가 필요하므로 주문 생성 후 처리)
-        if (!pointUsageAmounts.isEmpty()) {
-            for (int i = 0; i < pointUsageAmounts.size(); i++) {
-                BigDecimal usageAmount = pointUsageAmounts.get(i);
-
-                // 6-1. 기존 CHARGE/REFUND 포인트는 부분 사용 처리
-                Point originalPoint = pointsToUpdate.get(i);
-                originalPoint.usePartially(usageAmount);
-                pointRepository.save(originalPoint); // 테스트 코드 dirty check 오류때문에 추가
-
-                // 6-2. PointUsageHistory 생성 (주문과 포인트 연결 추적용)
-                PointUsageHistory history = PointUsageHistory.create(
-                        originalPoint,
-                        savedOrder,
-                        usageAmount
-                );
-                // 6-3. 포인트 사용 내역 저장
-                pointUsageHistoryRepository.save(history);
-            }
-
-            if (pointAmount.compareTo(BigDecimal.ZERO) > 0) {
-                // 6-4. User의 포인트 잔액 차감
-                user.usePoint(pointAmount);
-                userRepository.save(user); // 테스트 코드 dirty check 오류때문에 추가
-            }
+        // 5. 포인트 사용 처리 (서비스에 위임)
+        if (command.pointAmount() != null
+                && command.pointAmount().compareTo(BigDecimal.ZERO) > 0) {
+            pointUsageService.usePoints(
+                    command.userId(),
+                    command.pointAmount(),
+                    savedOrder
+            );
         }
 
-        // 7. OrderItem 생성
+        // 6. OrderItem 생성
         List<OrderItem> orderItems = new ArrayList<>();
         for (Cart cart : validatedOrderFromCartData.cartList()) {
             Product product = validatedOrderFromCartData.productMap().get(cart.getProduct().getId());

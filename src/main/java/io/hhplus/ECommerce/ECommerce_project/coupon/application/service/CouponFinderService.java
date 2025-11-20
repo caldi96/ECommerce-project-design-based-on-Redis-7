@@ -18,8 +18,8 @@ public class CouponFinderService {
     /**
      * 쿠폰 단건 조회
      */
-    public Coupon getCoupon(Long id) {
-        return couponRepository.findById(id)
+    public Coupon getCoupon(Long couponId) {
+        return couponRepository.findById(couponId)
                 .orElseThrow(() -> new CouponException(ErrorCode.COUPON_NOT_FOUND));
     }
 

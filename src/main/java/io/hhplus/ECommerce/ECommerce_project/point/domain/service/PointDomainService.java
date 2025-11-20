@@ -27,4 +27,13 @@ public class PointDomainService {
             throw new PointException(ErrorCode.POINT_AMOUNT_INVALID);
         }
     }
+
+    /**
+     * 포인트 잔액 검증
+     */
+    public void validateAvailablePoint(BigDecimal userPoint, BigDecimal pointAmount) {
+        if (userPoint.compareTo(pointAmount) < 0) {
+            throw new PointException(ErrorCode.POINT_INSUFFICIENT_POINT);
+        }
+    }
 }

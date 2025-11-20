@@ -16,8 +16,8 @@ public class UserFinderService {
     /**
      * 유저 조회
      */
-    public User getUser(Long id) {
-        return userRepository.findById(id)
+    public User getUser(Long userId) {
+        return userRepository.findById(userId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
     }
 

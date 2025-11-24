@@ -39,6 +39,9 @@ public class User extends BaseEntity {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;    // 수정일
 
+    @Version
+    private Long version;
+
     /**
      * 포인트 잔액 비교
      */

@@ -21,6 +21,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)    // 정적 팩토리 메서드를 위한 private 생성자
 public class Point extends BaseEntity {
 
+    @Version
+    private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -73,6 +76,7 @@ public class Point extends BaseEntity {
         LocalDateTime expiredAt = LocalDateTime.now().plusYears(1);  // 1년 후 만료
 
         return new Point(
+            null,   // version (JPA 관리)
             user,
             amount,
             BigDecimal.ZERO,  // usedAmount (초기값 0)
@@ -98,6 +102,7 @@ public class Point extends BaseEntity {
         LocalDateTime expiredAt = LocalDateTime.now().plusYears(1);
 
         return new Point(
+            null,   // version (JPA 관리)
             user,
             amount,
             BigDecimal.ZERO,  // usedAmount (초기값 0)

@@ -17,6 +17,7 @@ public enum ErrorCode {
 
     // ===== User =====
     USER_NOT_FOUND("사용자를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    USER_ID_INVALID("USER ID는 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
     USER_ID_REQUIRED("사용자 ID는 필수입니다.", HttpStatus.BAD_REQUEST),
     USER_POINT_RESTORE_FAILED("유저 포인트 복구에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
@@ -24,6 +25,7 @@ public enum ErrorCode {
     PRODUCT_NOT_FOUND("상품을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     PRODUCT_NAME_REQUIRED("상품명은 필수입니다.", HttpStatus.BAD_REQUEST),
     PRODUCT_PRICE_REQUIRED("가격은 필수입니다.", HttpStatus.BAD_REQUEST),
+    PRODUCT_ID_INVALID("PRODUCT ID는 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
     PRODUCT_PRICE_INVALID("가격은 0 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
     PRODUCT_STOCK_INVALID("재고는 0 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
     PRODUCT_OUT_OF_STOCK("재고가 부족합니다.", HttpStatus.CONFLICT),
@@ -51,6 +53,7 @@ public enum ErrorCode {
     // ===== Point =====
     POINT_NOT_FOUND("포인트를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     POINT_AMOUNT_REQUIRED("포인트 금액은 필수입니다.", HttpStatus.BAD_REQUEST),
+    POINT_ID_INVALID("Point ID는 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
     POINT_AMOUNT_INVALID("포인트 금액은 0보다 커야 합니다.", HttpStatus.BAD_REQUEST),
     POINT_DESCRIPTION_REQUIRED("포인트 설명은 필수입니다.", HttpStatus.BAD_REQUEST),
     POINT_ORDER_ID_REQUIRED("주문 ID는 필수입니다.", HttpStatus.BAD_REQUEST),
@@ -68,6 +71,7 @@ public enum ErrorCode {
     // ===== Cart =====
     CART_NOT_FOUND("장바구니 아이템을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     CART_PRODUCT_ID_REQUIRED("상품 ID는 필수입니다.", HttpStatus.BAD_REQUEST),
+    CART_ID_INVALID("CART ID는 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
     CART_QUANTITY_INVALID("수량은 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
     CART_QUANTITY_CANNOT_BE_LESS_THAN_ONE("수량은 1 미만이 될 수 없습니다. 삭제하려면 장바구니에서 제거하세요.", HttpStatus.CONFLICT),
     CART_INCREASE_AMOUNT_INVALID("증가량은 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
@@ -79,6 +83,7 @@ public enum ErrorCode {
     ORDER_NOT_FOUND("주문을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     ORDER_USER_ID_REQUIRED("사용자 ID는 필수입니다.", HttpStatus.BAD_REQUEST),
     ORDER_AMOUNT_REQUIRED("주문 금액은 필수입니다.", HttpStatus.BAD_REQUEST),
+    ORDER_ID_INVALID("Order ID는 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
     ORDER_AMOUNT_INVALID("주문 금액은 0 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
     ORDER_DISCOUNT_AMOUNT_INVALID("할인 금액은 0 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
     ORDER_POINT_AMOUNT_INVALID("포인트 사용 금액은 0 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
@@ -124,6 +129,7 @@ public enum ErrorCode {
     COUPON_CODE_REQUIRED("쿠폰 코드는 필수입니다.", HttpStatus.BAD_REQUEST),
     COUPON_DISCOUNT_TYPE_REQUIRED("할인 타입은 필수입니다.", HttpStatus.BAD_REQUEST),
     COUPON_DISCOUNT_VALUE_REQUIRED("할인 값은 필수입니다.", HttpStatus.BAD_REQUEST),
+    COUPON_ID_INVALID("USER ID는 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
     COUPON_DISCOUNT_VALUE_INVALID("할인 값은 0보다 커야 합니다.", HttpStatus.BAD_REQUEST),
     COUPON_PERCENTAGE_INVALID("할인율은 0보다 크고 100 이하여야 합니다.", HttpStatus.BAD_REQUEST),
     COUPON_FIXED_AMOUNT_INVALID("할인 금액은 0보다 커야 합니다.", HttpStatus.BAD_REQUEST),
@@ -153,9 +159,10 @@ public enum ErrorCode {
     // ===== Category =====
     CATEGORY_NOT_FOUND("카테고리를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     CATEGORY_NAME_REQUIRED("카테고리명은 필수입니다.", HttpStatus.BAD_REQUEST),
-    DISPLAY_ORDER_INVALID("표시 순서는 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
+    CATEGORY_ID_INVALID("카테고리 ID는 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
+    CATEGORY_DISPLAY_ORDER_INVALID("표시 순서는 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
     CATEGORY_NAME_DUPLICATED("이미 사용 중인 카테고리명입니다.", HttpStatus.CONFLICT),
-    DISPLAY_ORDER_DUPLICATED("이미 사용 중인 표시 순서입니다.", HttpStatus.CONFLICT),
+    CATEGORY_DISPLAY_ORDER_DUPLICATED("이미 사용 중인 표시 순서입니다.", HttpStatus.CONFLICT),
     CATEGORY_ALREADY_DELETED("이미 삭제된 카테고리입니다.", HttpStatus.CONFLICT);
 
     private final String message;

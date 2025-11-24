@@ -1,10 +1,9 @@
 package io.hhplus.ECommerce.ECommerce_project.product.application;
 
-import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
-import io.hhplus.ECommerce.ECommerce_project.common.exception.ProductException;
 import io.hhplus.ECommerce.ECommerce_project.product.application.command.DecreaseStockCommand;
+import io.hhplus.ECommerce.ECommerce_project.product.application.service.ProductFinderService;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductRepository;
+import io.hhplus.ECommerce.ECommerce_project.product.domain.service.ProductDomainService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,19 +12,22 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DecreaseStockUseCase {
 
-    private final ProductRepository productRepository;
+    private final ProductDomainService productDomainService;
+    private final ProductFinderService productFinderService;
 
     @Transactional
     public Product execute(DecreaseStockCommand command) {
-        // 1. 상품 조회
-        Product product = productRepository.findByIdWithLock(command.productId())
-                .orElseThrow(() -> new ProductException(ErrorCode.PRODUCT_NOT_FOUND));
 
-        // 2. 재고 감소 (도메인 메서드 활용)
+        // 1. ID 조회
+        productDomainService.validateId(command.productId());
+
+        // 2. 상품 조회
+        Product product = productFinderService.getProductWithLock(command.productId());
+
+        // 3. 재고 감소 (도메인 메서드 활용)
         product.decreaseStock(command.quantity());
 
-        // 3. 저장된 변경사항 반환
-//        return productRepository.save(product);
+        // 4. 저장된 변경사항 반환
         return product;
 
     }

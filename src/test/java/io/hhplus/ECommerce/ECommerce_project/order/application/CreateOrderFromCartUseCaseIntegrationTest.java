@@ -19,17 +19,18 @@ import io.hhplus.ECommerce.ECommerce_project.order.infrastructure.OrderRepositor
 import io.hhplus.ECommerce.ECommerce_project.order.presentation.response.CreateOrderResponse;
 import io.hhplus.ECommerce.ECommerce_project.point.domain.entity.Point;
 import io.hhplus.ECommerce.ECommerce_project.point.infrastructure.PointRepository;
+import io.hhplus.ECommerce.ECommerce_project.point.infrastructure.PointUsageHistoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
 import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductRepository;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
 import io.hhplus.ECommerce.ECommerce_project.user.infrastructure.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -40,7 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
 @ActiveProfiles("integration")
-@Transactional
 class CreateOrderFromCartUseCaseIntegrationTest {
 
     @Autowired
@@ -68,6 +68,9 @@ class CreateOrderFromCartUseCaseIntegrationTest {
     private PointRepository pointRepository;
 
     @Autowired
+    private PointUsageHistoryRepository pointUsageHistoryRepository;
+
+    @Autowired
     private OrderRepository orderRepository;
 
     @Autowired
@@ -81,7 +84,10 @@ class CreateOrderFromCartUseCaseIntegrationTest {
     @BeforeEach
     void setUp() {
         // 테스트 사용자 생성
-        testUser = new User("testuser", "password123", BigDecimal.ZERO, null, null);
+        testUser = new User();
+        testUser.setUsername("testuser");
+        testUser.setPassword("password123");
+        testUser.setPointBalance(BigDecimal.ZERO);
         testUser = userRepository.save(testUser);
 
         // 테스트 카테고리 생성
@@ -111,6 +117,21 @@ class CreateOrderFromCartUseCaseIntegrationTest {
                 5
         );
         testProduct2 = productRepository.save(testProduct2);
+    }
+
+    @AfterEach
+    void tearDown() {
+        // 외래 키 제약조건을 고려한 순서로 삭제
+        cartRepository.deleteAll();
+        pointUsageHistoryRepository.deleteAll();
+        orderItemRepository.deleteAll();
+        orderRepository.deleteAll();
+        pointRepository.deleteAll();
+        userCouponRepository.deleteAll();
+        couponRepository.deleteAll();
+        productRepository.deleteAll();
+        categoryRepository.deleteAll();
+        userRepository.deleteAll();
     }
 
     @Test
@@ -144,7 +165,7 @@ class CreateOrderFromCartUseCaseIntegrationTest {
         // 주문 확인
         Orders order = orderRepository.findById(response.orderId()).orElseThrow();
         assertThat(order.getUser().getId()).isEqualTo(testUser.getId());
-        assertThat(order.getTotalAmount()).isEqualTo(BigDecimal.valueOf(40000)); // 상품 총액 (상품1: 20000 + 상품2: 20000)
+        assertThat(order.getTotalAmount()).isEqualByComparingTo(BigDecimal.valueOf(40000)); // 상품 총액 (상품1: 20000 + 상품2: 20000)
 
         // 재고 감소 확인
         Product updatedProduct1 = productRepository.findById(testProduct1.getId()).orElseThrow();
@@ -202,7 +223,7 @@ class CreateOrderFromCartUseCaseIntegrationTest {
         Orders order = orderRepository.findById(response.orderId()).orElseThrow();
 
         // 할인 금액 확인 (20000 * 10% = 2000)
-        assertThat(order.getDiscountAmount()).isEqualTo(BigDecimal.valueOf(2000));
+        assertThat(order.getDiscountAmount()).isEqualByComparingTo(BigDecimal.valueOf(2000));
 
         // 쿠폰 사용 횟수 확인
         UserCoupon updatedUserCoupon = userCouponRepository.findById(userCoupon.getId()).orElseThrow();
@@ -239,15 +260,15 @@ class CreateOrderFromCartUseCaseIntegrationTest {
         Orders order = orderRepository.findById(response.orderId()).orElseThrow();
 
         // 포인트 사용 금액 확인
-        assertThat(order.getPointAmount()).isEqualTo(BigDecimal.valueOf(3000));
+        assertThat(order.getPointAmount()).isEqualByComparingTo(BigDecimal.valueOf(3000));
 
         // 사용자 포인트 잔액 확인 (5000 충전 - 3000 사용 = 2000)
         User updatedUser = userRepository.findById(testUser.getId()).orElseThrow();
-        assertThat(updatedUser.getPointBalance()).isEqualTo(BigDecimal.valueOf(2000));
+        assertThat(updatedUser.getPointBalance()).isEqualByComparingTo(BigDecimal.valueOf(2000));
 
         // 포인트 사용 확인
         Point updatedPoint = pointRepository.findById(point.getId()).orElseThrow();
-        assertThat(updatedPoint.getUsedAmount()).isEqualTo(BigDecimal.valueOf(3000));
+        assertThat(updatedPoint.getUsedAmount()).isEqualByComparingTo(BigDecimal.valueOf(3000));
     }
 
     @Test
@@ -297,11 +318,11 @@ class CreateOrderFromCartUseCaseIntegrationTest {
         Orders order = orderRepository.findById(response.orderId()).orElseThrow();
 
         // 총 주문 금액: 30000 (상품 총액)
-        assertThat(order.getTotalAmount()).isEqualTo(BigDecimal.valueOf(30000));
+        assertThat(order.getTotalAmount()).isEqualByComparingTo(BigDecimal.valueOf(30000));
         // 할인: 5000 (쿠폰)
-        assertThat(order.getDiscountAmount()).isEqualTo(BigDecimal.valueOf(5000));
+        assertThat(order.getDiscountAmount()).isEqualByComparingTo(BigDecimal.valueOf(5000));
         // 포인트: 2000
-        assertThat(order.getPointAmount()).isEqualTo(BigDecimal.valueOf(2000));
+        assertThat(order.getPointAmount()).isEqualByComparingTo(BigDecimal.valueOf(2000));
     }
 
     @Test
@@ -325,7 +346,7 @@ class CreateOrderFromCartUseCaseIntegrationTest {
         // When & Then
         assertThrows(ProductException.class, () -> createOrderFromCartUseCase.execute(command));
 
-        // 재고가 변경되지 않았는지 확인 (롤백)
+        // 재고가 변경되지 않았는지 확인
         Product unchangedProduct = productRepository.findById(testProduct1.getId()).orElseThrow();
         assertThat(unchangedProduct.getStock()).isEqualTo(1);
     }
@@ -359,7 +380,10 @@ class CreateOrderFromCartUseCaseIntegrationTest {
     @DisplayName("다른 사용자의 장바구니로 주문 생성 시 실패한다")
     void createOrder_fail_otherUserCart() {
         // Given
-        User otherUser = new User("otheruser", "password456", BigDecimal.ZERO, null, null);
+        User otherUser = new User();
+        otherUser.setUsername("otheruser");
+        otherUser.setPassword("password456");
+        otherUser.setPointBalance(BigDecimal.ZERO);
         otherUser = userRepository.save(otherUser);
 
         Cart cart = Cart.createCart(otherUser, testProduct1, 2);

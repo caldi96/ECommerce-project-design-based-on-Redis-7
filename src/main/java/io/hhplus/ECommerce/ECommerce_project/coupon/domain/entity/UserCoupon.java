@@ -29,6 +29,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class UserCoupon extends BaseEntity {
 
+    @Version
+    private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "coupon_id", nullable = false)
     private Coupon coupon;
@@ -62,6 +65,7 @@ public class UserCoupon extends BaseEntity {
         LocalDateTime now = LocalDateTime.now();
 
         return new UserCoupon(
+            null,                           // version (JPA 관리)
             coupon,
             user,
             UserCouponStatus.AVAILABLE,     // 발급 시 사용 가능 상태

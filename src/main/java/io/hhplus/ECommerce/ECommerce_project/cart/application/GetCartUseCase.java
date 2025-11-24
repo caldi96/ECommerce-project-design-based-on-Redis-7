@@ -1,12 +1,10 @@
 package io.hhplus.ECommerce.ECommerce_project.cart.application;
 
+import io.hhplus.ECommerce.ECommerce_project.cart.application.service.CartFinderService;
 import io.hhplus.ECommerce.ECommerce_project.cart.domain.entity.Cart;
-import io.hhplus.ECommerce.ECommerce_project.cart.infrastructure.CartRepository;
 import io.hhplus.ECommerce.ECommerce_project.cart.presentation.response.GetCartResponse;
-import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
-import io.hhplus.ECommerce.ECommerce_project.common.exception.ProductException;
-import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductRepository;
+import io.hhplus.ECommerce.ECommerce_project.user.application.service.UserFinderService;
+import io.hhplus.ECommerce.ECommerce_project.user.domain.service.UserDomainService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,21 +15,25 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GetCartUseCase {
 
-    private final CartRepository cartRepository;
-    private final ProductRepository productRepository;
+    private final CartFinderService cartFinderService;
+    private final UserDomainService userDomainService;
+    private final UserFinderService userFinderService;
 
     @Transactional(readOnly = true)
     public List<GetCartResponse> execute(Long userId) {
-        // 1. 사용자의 장바구니 조회
-        List<Cart> cartList = cartRepository.findAllByUser_Id(userId);
 
-        // 2. 각 장바구니 아이템마다 상품 정보 조회 후 Response 생성
+        // 1. 유저 ID 검증
+        userDomainService.validateId(userId);
+
+        // 2. 유저 존재 유무 확인
+        userFinderService.getUser(userId);
+
+        // 3. 사용자의 장바구니 조회
+        List<Cart> cartList = cartFinderService.findAllByUserIdWithProduct(userId);
+
+        // 4. 각 장바구니 아이템마다 상품 정보 조회 후 Response 생성
         return cartList.stream()
-                .map(cart -> {
-                    Product product = productRepository.findByIdActive(cart.getProduct().getId())
-                            .orElseThrow(() -> new ProductException(ErrorCode.PRODUCT_NOT_FOUND));
-                    return GetCartResponse.from(cart, product);
-                })
+                .map(cart -> GetCartResponse.from(cart, cart.getProduct()))
                 .toList();
     }
 }

@@ -10,14 +10,18 @@ import io.hhplus.ECommerce.ECommerce_project.coupon.domain.entity.UserCoupon;
 import io.hhplus.ECommerce.ECommerce_project.coupon.domain.enums.DiscountType;
 import io.hhplus.ECommerce.ECommerce_project.coupon.infrastructure.CouponRepository;
 import io.hhplus.ECommerce.ECommerce_project.coupon.infrastructure.UserCouponRepository;
+import io.hhplus.ECommerce.ECommerce_project.order.infrastructure.OrderItemRepository;
+import io.hhplus.ECommerce.ECommerce_project.order.infrastructure.OrderRepository;
 import io.hhplus.ECommerce.ECommerce_project.order.presentation.request.CreateOrderFromCartRequest;
 import io.hhplus.ECommerce.ECommerce_project.order.presentation.request.CreateOrderFromProductRequest;
 import io.hhplus.ECommerce.ECommerce_project.point.domain.entity.Point;
 import io.hhplus.ECommerce.ECommerce_project.point.infrastructure.PointRepository;
+import io.hhplus.ECommerce.ECommerce_project.point.infrastructure.PointUsageHistoryRepository;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
 import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductRepository;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
 import io.hhplus.ECommerce.ECommerce_project.user.infrastructure.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,7 +31,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -41,7 +44,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("integration")
-@Transactional
 class OrderControllerIntegrationTest {
 
     @Autowired
@@ -71,6 +73,15 @@ class OrderControllerIntegrationTest {
     @Autowired
     private PointRepository pointRepository;
 
+    @Autowired
+    private PointUsageHistoryRepository pointUsageHistoryRepository;
+
+    @Autowired
+    private OrderRepository orderRepository;
+
+    @Autowired
+    private OrderItemRepository orderItemRepository;
+
     private User testUser;
     private Category testCategory;
     private Product testProduct1;
@@ -79,7 +90,10 @@ class OrderControllerIntegrationTest {
     @BeforeEach
     void setUp() {
         // 테스트 사용자 생성 (포인트 0으로 시작)
-        testUser = new User("testuser", "password123", BigDecimal.ZERO, null, null);
+        testUser = new User();
+        testUser.setUsername("testuser");
+        testUser.setPassword("password123");
+        testUser.setPointBalance(BigDecimal.ZERO);
         testUser = userRepository.save(testUser);
 
         // 테스트 카테고리 생성
@@ -109,6 +123,34 @@ class OrderControllerIntegrationTest {
                 5
         );
         testProduct2 = productRepository.save(testProduct2);
+    }
+
+    @AfterEach
+    void tearDown() {
+        // 외래 키 제약조건을 고려한 순서로 삭제
+        // 1. 주문 관련 삭제 (자식 먼저)
+        pointUsageHistoryRepository.deleteAll();
+        orderItemRepository.deleteAll();
+        orderRepository.deleteAll();
+
+        // 2. 장바구니 삭제
+        cartRepository.deleteAll();
+
+        // 3. 포인트 삭제
+        pointRepository.deleteAll();
+
+        // 4. 쿠폰 관련 삭제 (사용자 쿠폰 먼저)
+        userCouponRepository.deleteAll();
+        couponRepository.deleteAll();
+
+        // 5. 상품 삭제
+        productRepository.deleteAll();
+
+        // 6. 카테고리 삭제
+        categoryRepository.deleteAll();
+
+        // 7. 사용자 삭제
+        userRepository.deleteAll();
     }
 
     // ========== POST /api/orders/from-cart 테스트 ==========

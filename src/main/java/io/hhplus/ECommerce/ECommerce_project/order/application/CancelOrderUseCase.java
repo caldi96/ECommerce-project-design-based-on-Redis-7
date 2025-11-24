@@ -1,24 +1,25 @@
 package io.hhplus.ECommerce.ECommerce_project.order.application;
 
-import io.hhplus.ECommerce.ECommerce_project.common.exception.*;
+import io.hhplus.ECommerce.ECommerce_project.coupon.application.service.CouponFinderService;
+import io.hhplus.ECommerce.ECommerce_project.coupon.application.service.UserCouponFinderService;
 import io.hhplus.ECommerce.ECommerce_project.coupon.domain.entity.Coupon;
 import io.hhplus.ECommerce.ECommerce_project.coupon.domain.entity.UserCoupon;
-import io.hhplus.ECommerce.ECommerce_project.coupon.infrastructure.CouponRepository;
-import io.hhplus.ECommerce.ECommerce_project.coupon.infrastructure.UserCouponRepository;
 import io.hhplus.ECommerce.ECommerce_project.order.application.command.CancelOrderCommand;
+import io.hhplus.ECommerce.ECommerce_project.order.application.service.OrderFinderService;
+import io.hhplus.ECommerce.ECommerce_project.order.application.service.OrderItemFinderService;
 import io.hhplus.ECommerce.ECommerce_project.order.domain.entity.OrderItem;
 import io.hhplus.ECommerce.ECommerce_project.order.domain.entity.Orders;
 import io.hhplus.ECommerce.ECommerce_project.order.domain.enums.OrderItemStatus;
-import io.hhplus.ECommerce.ECommerce_project.order.infrastructure.OrderItemRepository;
-import io.hhplus.ECommerce.ECommerce_project.order.infrastructure.OrderRepository;
+import io.hhplus.ECommerce.ECommerce_project.order.domain.service.OrderDomainService;
+import io.hhplus.ECommerce.ECommerce_project.point.application.service.PointFinderService;
+import io.hhplus.ECommerce.ECommerce_project.point.application.service.PointUsageHistoryFinderService;
 import io.hhplus.ECommerce.ECommerce_project.point.domain.entity.Point;
 import io.hhplus.ECommerce.ECommerce_project.point.domain.entity.PointUsageHistory;
-import io.hhplus.ECommerce.ECommerce_project.point.infrastructure.PointRepository;
-import io.hhplus.ECommerce.ECommerce_project.point.infrastructure.PointUsageHistoryRepository;
+import io.hhplus.ECommerce.ECommerce_project.product.application.service.ProductFinderService;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductRepository;
+import io.hhplus.ECommerce.ECommerce_project.user.application.service.UserFinderService;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
-import io.hhplus.ECommerce.ECommerce_project.user.infrastructure.UserRepository;
+import io.hhplus.ECommerce.ECommerce_project.user.domain.service.UserDomainService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,92 +31,89 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CancelOrderUseCase {
 
-    private final OrderRepository orderRepository;
-    private final OrderItemRepository orderItemRepository;
-    private final ProductRepository productRepository;
-    private final CouponRepository couponRepository;
-    private final UserCouponRepository userCouponRepository;
-    private final PointRepository pointRepository;
-    private final PointUsageHistoryRepository pointUsageHistoryRepository;
-    private final UserRepository userRepository;
+    private final OrderDomainService orderDomainService;
+    private final OrderFinderService orderFinderService;
+    private final UserDomainService userDomainService;
+    private final UserFinderService userFinderService;
+    private final OrderItemFinderService orderItemFinderService;
+    private final ProductFinderService productFinderService;
+    private final CouponFinderService couponFinderService;
+    private final UserCouponFinderService userCouponFinderService;
+    private final PointFinderService pointFinderService;
+    private final PointUsageHistoryFinderService pointUsageHistoryFinderService;
 
     @Transactional
     public void execute(CancelOrderCommand command) {
-        // 1. 주문 조회
-        Orders order = orderRepository.findByIdWithLock(command.orderId())
-                .orElseThrow(() -> new OrderException(ErrorCode.ORDER_NOT_FOUND));
 
-        // 2. 주문 소유자 확인
-        if (!order.getUser().getId().equals(command.userId())) {
-            throw new OrderException(ErrorCode.ORDER_NOT_FOUND,
-                    "해당 주문에 대한 권한이 없습니다.");
-        }
+        // 1. ID 검증
+        orderDomainService.validateId(command.orderId());
+        userDomainService.validateId(command.userId());
 
-        // 3. 주문 취소 가능 여부 확인 (PENDING, PAID, PAYMENT_FAILED 상태만 취소 가능)
-        if (!order.canCancel() && !order.canCancelAfterPaid()) {
-            throw new OrderException(ErrorCode.ORDER_INVALID_STATUS_FOR_CANCEL,
-                    "취소할 수 없는 주문 상태입니다. 현재 상태: " + order.getStatus());
-        }
+        // 2. 유저 존재 유무 확인
+        User user = userFinderService.getUser(command.userId());
 
-        // 4. 주문 아이템 조회
-        List<OrderItem> orderItems = orderItemRepository.findByOrders_Id(command.orderId());
+        // 3. 주문 조회
+        Orders order = orderFinderService.getOrderWithLock(command.orderId());
 
-        // 5. 상품 재고 복구 (동시성 제어 적용, 여러 사람이 동시에 주문 취소시 재고 복구에 동시성 이슈 발생 가능)
+        // 4. 주문 소유자 확인
+        orderDomainService.validateOrderOwner(order, user);
+
+        // 5. 주문 취소 가능 여부 확인 (PENDING, PAID, PAYMENT_FAILED 상태만 취소 가능)
+        orderDomainService.validateCancelable(order);
+
+        // 6. 주문 아이템 조회
+        List<OrderItem> orderItems = orderItemFinderService.getOrderItems(command.orderId());
+
+        // 7. 상품 재고 복구 (동시성 제어 적용, 여러 사람이 동시에 주문 취소시 재고 복구에 동시성 이슈 발생 가능)
         for (OrderItem orderItem : orderItems) {
-            // 5-1. 주문 아이템의 상품 조회(비관적 락)
-            Product product = productRepository.findByIdWithLock(orderItem.getProduct().getId())
-                    .orElseThrow(() -> new ProductException(ErrorCode.PRODUCT_NOT_FOUND));
+            // 7-1. 주문 아이템의 상품 조회(비관적 락)
+            Product product = productFinderService.getProductWithLock(orderItem.getProduct().getId());
 
-            // 5-2. 해당 상품 재고 증가(복구)
+            // 7-2. 해당 상품 재고 증가(복구)
             product.increaseStock(orderItem.getQuantity());
         }
 
-        // 6. 쿠폰 복구
+        // 8. 쿠폰 복구
         if (order.getCoupon() != null) {
-            // 6-1. 사용자 쿠폰 조회(비관적락)
-            UserCoupon userCoupon = userCouponRepository
-                    .findByUser_IdAndCoupon_IdWithLock(order.getUser().getId(), order.getCoupon().getId())
-                    .orElseThrow(() -> new CouponException(ErrorCode.USER_COUPON_NOT_FOUND));
+            // 8-1. 사용자 쿠폰 조회(비관적락)
+            UserCoupon userCoupon = userCouponFinderService.getUserCouponWithLock(order.getUser(), order.getCoupon());
 
-            // 6-2. 쿠폰 정보 조회
-            Coupon coupon = couponRepository.findById(order.getCoupon().getId())
-                    .orElseThrow(() -> new CouponException(ErrorCode.COUPON_NOT_FOUND));
+            // 8-2. 쿠폰 정보 조회
+            Coupon coupon = couponFinderService.getCoupon(order.getCoupon().getId());
 
-            // 6-3. 쿠폰 사용 취소 처리 (usedCount 감소)
+            // 8-3. 쿠폰 사용 취소 처리 (usedCount 감소)
             // issuedQuantity는 복구하지 않음 (한번 발급되면 영구적)
             userCoupon.cancelUse(coupon.getPerUserLimit());
         }
 
-        // 7. 포인트 복구 (PointUsageHistory 활용)
+        // 9. 포인트 복구 (PointUsageHistory 활용)
         List<PointUsageHistory> pointUsageHistories =
-                pointUsageHistoryRepository.findByOrders_IdAndCanceledAtIsNull(command.orderId());
+                pointUsageHistoryFinderService.getPointUsageHistories(command.orderId());
 
         BigDecimal totalRestoredPoint = BigDecimal.ZERO;
 
         for (PointUsageHistory history : pointUsageHistories) {
-            // 7-1. 원본 포인트 조회
-            Point originalPoint = pointRepository.findByIdWithLock(history.getPoint().getId())
-                    .orElseThrow(() -> new PointException(ErrorCode.POINT_NOT_FOUND));
+            // 9-1. 원본 포인트 조회
+            Point originalPoint = pointFinderService.getPointWithLock(history.getPoint().getId());
 
-            // 7-2. 사용한 포인트 금액만큼 복구
+            // 9-2. 사용한 포인트 금액만큼 복구
             originalPoint.restoreUsedAmount(history.getUsedAmount());
 
-            // 7-3. PointUsageHistory 취소 처리
+            // 9-3. PointUsageHistory 취소 처리
             history.cancel();
 
-            // 7-4. 복구할 총 포인트 금액 누적
+            // 9-4. 복구할 총 포인트 금액 누적
             totalRestoredPoint = totalRestoredPoint.add(history.getUsedAmount());
         }
 
-        // 7-5. User의 포인트 잔액 복구
+        // 9-5. User의 포인트 잔액 복구
         if (totalRestoredPoint.compareTo(BigDecimal.ZERO) > 0) {
-            User user = userRepository.findByIdWithLock(command.userId())
-                    .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
+            User lockedUser = userFinderService.getUserWithLock(command.userId());
 
-            user.refundPoint(totalRestoredPoint);
+            lockedUser.refundPoint(totalRestoredPoint);
         }
 
-        // 8-1. 주문 아이템 상태 변경
+        // 10-1. 주문 아이템 상태 변경
         for (OrderItem orderItem : orderItems) {
             if (orderItem.getStatus() == OrderItemStatus.ORDER_PENDING) {
                 orderItem.cancel();
@@ -124,7 +122,7 @@ public class CancelOrderUseCase {
             }
         }
 
-        // 8-2. 주문 상태 변경
+        // 10-2. 주문 상태 변경
         if (order.isPending()) {
             order.cancel();  // PENDING -> CANCELED (결제 전 주문 취소)
         } else if (order.isPaid()) {

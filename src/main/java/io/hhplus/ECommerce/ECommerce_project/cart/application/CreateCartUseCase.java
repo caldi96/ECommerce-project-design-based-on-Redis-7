@@ -1,16 +1,15 @@
 package io.hhplus.ECommerce.ECommerce_project.cart.application;
 
 import io.hhplus.ECommerce.ECommerce_project.cart.application.command.CreateCartCommand;
+import io.hhplus.ECommerce.ECommerce_project.cart.application.service.CartFinderService;
 import io.hhplus.ECommerce.ECommerce_project.cart.domain.entity.Cart;
+import io.hhplus.ECommerce.ECommerce_project.cart.domain.service.CartDomainService;
 import io.hhplus.ECommerce.ECommerce_project.cart.infrastructure.CartRepository;
-import io.hhplus.ECommerce.ECommerce_project.common.exception.CartException;
-import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
-import io.hhplus.ECommerce.ECommerce_project.common.exception.ProductException;
-import io.hhplus.ECommerce.ECommerce_project.common.exception.UserException;
+import io.hhplus.ECommerce.ECommerce_project.product.application.service.ProductFinderService;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
-import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductRepository;
+import io.hhplus.ECommerce.ECommerce_project.user.application.service.UserFinderService;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
-import io.hhplus.ECommerce.ECommerce_project.user.infrastructure.UserRepository;
+import io.hhplus.ECommerce.ECommerce_project.user.domain.service.UserDomainService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,26 +21,27 @@ import java.util.Optional;
 public class CreateCartUseCase {
 
     private final CartRepository cartRepository;
-    private final ProductRepository productRepository;
-    private final UserRepository userRepository;
+    private final CartFinderService cartFinderService;
+    private final CartDomainService cartDomainService;
+    private final UserDomainService userDomainService;
+    private final UserFinderService userFinderService;
+    private final ProductFinderService productFinderService;
 
     @Transactional
     public Cart execute(CreateCartCommand command) {
-        // 1. 유저 존재 여부 확인
-        User user = userRepository.findById(command.userId())
-                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
-        // 2. 상품 존재 여부 확인
-        Product product = productRepository.findByIdActive(command.productId())
-                .orElseThrow(() -> new ProductException(ErrorCode.PRODUCT_NOT_FOUND));
+        // 1. USER_ID 값 검증 (Domain Layer)
+        userDomainService.validateId(command.userId());
+        cartDomainService.validateQuantityPositive(command.quantity());
 
-        // 3. 상품 주문 가능 여부 확인
-        if (!product.canOrder(command.quantity())) {
-            throw new CartException(ErrorCode.CART_PRODUCT_CANNOT_BE_ADDED_TO_CART);
-        }
+        // 2. 유저 존재 여부 확인
+        User user = userFinderService.getUser(command.userId());
+
+        // 3. 상품 존재 여부 확인
+        Product product = productFinderService.getActiveProduct(command.productId());
 
         // 4. 이미 해당 사용자의 장바구니에 같은 상품 존재 여부 확인
-        Optional<Cart> existingCart = cartRepository.findByUser_IdAndProduct_Id(command.userId(), command.productId());
+        Optional<Cart> existingCart = cartFinderService.findByUserAndProduct(user, product);
 
         // 5-1. 이미 같은 상품이 존재하면 수량만 증가
         if (existingCart.isPresent()) {
@@ -50,9 +50,7 @@ public class CreateCartUseCase {
             int newTotalQuantity = cart.getQuantity() + command.quantity();
 
             // 증가된 총 수량으로 주문 가능 여부 확인
-            if (!product.canOrder(newTotalQuantity)) {
-                throw new CartException(ErrorCode.CART_PRODUCT_CANNOT_BE_ADDED_TO_CART);
-            }
+            cartDomainService.validateCanOrder(product, newTotalQuantity);
 
             // 기존 수량에 추가
             cart.increaseQuantity(command.quantity());
@@ -60,13 +58,15 @@ public class CreateCartUseCase {
             return cart;
         }
 
-        // 5-2. 도메인 생성
+        // 5-2. 새 카트 생성
+        // 상품 주문 가능 여부 확인
+        cartDomainService.validateCanOrder(product, command.quantity());
         Cart cart = Cart.createCart(
                 user,
                 product,
                 command.quantity()
         );
-        // 저장 후 반환
+        // 6. 저장 후 반환
         return cartRepository.save(cart);
     }
 }

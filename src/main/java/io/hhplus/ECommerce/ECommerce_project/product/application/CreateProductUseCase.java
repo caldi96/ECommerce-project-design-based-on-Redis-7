@@ -1,8 +1,6 @@
 package io.hhplus.ECommerce.ECommerce_project.product.application;
 
-import io.hhplus.ECommerce.ECommerce_project.category.infrastructure.CategoryRepository;
-import io.hhplus.ECommerce.ECommerce_project.common.exception.CategoryException;
-import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
+import io.hhplus.ECommerce.ECommerce_project.category.application.service.CategoryFinderService;
 import io.hhplus.ECommerce.ECommerce_project.product.application.command.CreateProductCommand;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
 import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductRepository;
@@ -15,14 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class CreateProductUseCase {
 
     private final ProductRepository productRepository;
-    private final CategoryRepository categoryRepository;
+    private final CategoryFinderService categoryFinderService;
 
     @Transactional
     public Product execute(CreateProductCommand command) {
         // 1. 도메인 생성
         Product product = Product.createProduct(
-                categoryRepository.findByIdAndDeletedAtIsNull(command.categoryId())
-                                .orElseThrow(() -> new CategoryException(ErrorCode.CATEGORY_NOT_FOUND)),
+                categoryFinderService.getActiveCategory(command.categoryId()),
                 command.name(),
                 command.description(),
                 command.price(),

@@ -16,8 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.util.concurrent.CountDownLatch;
@@ -28,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 재고 동시성 통합 테스트 (JPA 기반)
+ * 재고 동시성 통합 테스트
  *
  * 시나리오:
  * - 여러 사용자가 동시에 같은 상품을 주문할 때 재고 감소
@@ -57,18 +55,15 @@ public class StockConcurrencyTest {
     @Autowired
     private OrderItemRepository orderItemRepository;
 
-    @Autowired
-    private PlatformTransactionManager transactionManager;
-
     private Product testProduct;
     private Category testCategory;
 
     @BeforeEach
     void setUp() {
         // 기존 데이터 정리 (외래 키 제약조건 고려)
-        orderItemRepository.deleteAll();  // OrderItem -> Order, Product 참조
-        orderRepository.deleteAll();      // Order -> User, Product 참조
-        productRepository.deleteAll();    // Product -> Category 참조
+        orderItemRepository.deleteAll();
+        orderRepository.deleteAll();
+        productRepository.deleteAll();
         userRepository.deleteAll();
         categoryRepository.deleteAll();
 
@@ -82,7 +77,7 @@ public class StockConcurrencyTest {
                 "동시성 테스트 상품",
                 "재고 동시성 테스트용",
                 BigDecimal.valueOf(10000),
-                100,  // 재고 100개
+                100,
                 1,
                 10
         );
@@ -93,66 +88,59 @@ public class StockConcurrencyTest {
     @DisplayName("여러 사용자가 동시에 같은 상품을 주문할 때 재고가 정확히 감소해야 한다")
     void testConcurrentStockDecrease() throws InterruptedException {
         // Given
-        int userCount = 50;  // 50명이 동시에 주문
-        int orderQuantityPerUser = 1;  // 각자 1개씩 주문
+        int userCount = 50;
+        int orderQuantityPerUser = 1;
 
-        // 미리 사용자들 생성
+        // 사용자들 생성
         User[] users = new User[userCount];
         for (int i = 0; i < userCount; i++) {
-            users[i] = new User(
-                    "stock_user_" + i,
-                    "password",
-                    BigDecimal.ZERO,
-                    null,
-                    null
-            );
+            users[i] = new User();
+            users[i].setUsername("stock_user_" + i);
+            users[i].setPassword("password");
+            users[i].setPointBalance(BigDecimal.ZERO);
             users[i] = userRepository.save(users[i]);
         }
 
         int initialStock = testProduct.getStock();
         ExecutorService executorService = Executors.newFixedThreadPool(userCount);
-        CountDownLatch latch = new CountDownLatch(userCount);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch completionLatch = new CountDownLatch(userCount);
 
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger failCount = new AtomicInteger(0);
 
-        // When: 50명이 동시에 1개씩 주문 (총 50개 주문)
-        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-
+        // When
         for (int i = 0; i < userCount; i++) {
             final int userIndex = i;
             executorService.submit(() -> {
                 try {
-                    transactionTemplate.execute(status -> {
-                        CreateOrderFromProductCommand command = new CreateOrderFromProductCommand(
-                                users[userIndex].getId(),
-                                testProduct.getId(),
-                                orderQuantityPerUser,
-                                null,
-                                null
-                        );
-                        return createOrderFromProductUseCase.execute(command);
-                    });
+                    startLatch.await();
+                    CreateOrderFromProductCommand command = new CreateOrderFromProductCommand(
+                            users[userIndex].getId(),
+                            testProduct.getId(),
+                            orderQuantityPerUser,
+                            null,
+                            null
+                    );
+                    createOrderFromProductUseCase.execute(command);
                     successCount.incrementAndGet();
                 } catch (Exception e) {
-                    System.err.println("Order failed: " + e.getClass().getSimpleName() + " - " + e.getMessage());
-                    e.printStackTrace();
                     failCount.incrementAndGet();
                 } finally {
-                    latch.countDown();
+                    completionLatch.countDown();
                 }
             });
         }
 
-        latch.await();
+        startLatch.countDown();
+        completionLatch.await();
         executorService.shutdown();
 
         // Then
-        // 모두 성공해야 함 (재고 100개, 주문 50개)
         assertThat(successCount.get()).isEqualTo(userCount);
         assertThat(failCount.get()).isEqualTo(0);
 
-        // 재고가 정확히 50개 감소했는지 확인
+        // 재고가 정확히 감소했는지 확인
         Product updatedProduct = productRepository.findById(testProduct.getId()).orElseThrow();
         assertThat(updatedProduct.getStock()).isEqualTo(initialStock - userCount * orderQuantityPerUser);
         assertThat(updatedProduct.getSoldCount()).isEqualTo(userCount * orderQuantityPerUser);
@@ -166,62 +154,55 @@ public class StockConcurrencyTest {
         testProduct.updateStock(20);
         testProduct = productRepository.save(testProduct);
 
-        int userCount = 50;  // 50명이 동시에 주문 시도
-        int orderQuantityPerUser = 1;  // 각자 1개씩
+        int userCount = 50;
+        int orderQuantityPerUser = 1;
 
-        // 미리 사용자들 생성
+        // 사용자들 생성
         User[] users = new User[userCount];
         for (int i = 0; i < userCount; i++) {
-            users[i] = new User(
-                    "shortage_user_" + i,
-                    "password",
-                    BigDecimal.ZERO,
-                    null,
-                    null
-            );
+            users[i] = new User();
+            users[i].setUsername("shortage_user_" + i);
+            users[i].setPassword("password");
+            users[i].setPointBalance(BigDecimal.ZERO);
             users[i] = userRepository.save(users[i]);
         }
 
         int initialStock = testProduct.getStock();
         ExecutorService executorService = Executors.newFixedThreadPool(userCount);
-        CountDownLatch latch = new CountDownLatch(userCount);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch completionLatch = new CountDownLatch(userCount);
 
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger failCount = new AtomicInteger(0);
 
-        // When: 50명이 동시에 1개씩 주문 시도 (재고는 20개만)
-        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-
+        // When
         for (int i = 0; i < userCount; i++) {
             final int userIndex = i;
             executorService.submit(() -> {
                 try {
-                    transactionTemplate.execute(status -> {
-                        CreateOrderFromProductCommand command = new CreateOrderFromProductCommand(
-                                users[userIndex].getId(),
-                                testProduct.getId(),
-                                orderQuantityPerUser,
-                                null,
-                                null
-                        );
-                        return createOrderFromProductUseCase.execute(command);
-                    });
+                    startLatch.await();
+                    CreateOrderFromProductCommand command = new CreateOrderFromProductCommand(
+                            users[userIndex].getId(),
+                            testProduct.getId(),
+                            orderQuantityPerUser,
+                            null,
+                            null
+                    );
+                    createOrderFromProductUseCase.execute(command);
                     successCount.incrementAndGet();
                 } catch (Exception e) {
-                    System.err.println("Order failed: " + e.getClass().getSimpleName() + " - " + e.getMessage());
-                    e.printStackTrace();
                     failCount.incrementAndGet();
                 } finally {
-                    latch.countDown();
+                    completionLatch.countDown();
                 }
             });
         }
 
-        latch.await();
+        startLatch.countDown();
+        completionLatch.await();
         executorService.shutdown();
 
         // Then
-        // 재고(20개)만큼만 주문 성공해야 함
         assertThat(successCount.get()).isEqualTo(initialStock);
         assertThat(failCount.get()).isEqualTo(userCount - initialStock);
 
@@ -235,66 +216,59 @@ public class StockConcurrencyTest {
     @DisplayName("동시에 여러 개씩 주문할 때 재고가 정확히 감소해야 한다")
     void testConcurrentMultipleQuantityOrder() throws InterruptedException {
         // Given
-        int userCount = 20;  // 20명이 동시에 주문
-        int orderQuantityPerUser = 3;  // 각자 3개씩 주문 (총 60개)
+        int userCount = 20;
+        int orderQuantityPerUser = 3;
 
-        // 미리 사용자들 생성
+        // 사용자들 생성
         User[] users = new User[userCount];
         for (int i = 0; i < userCount; i++) {
-            users[i] = new User(
-                    "multi_order_user_" + i,
-                    "password",
-                    BigDecimal.ZERO,
-                    null,
-                    null
-            );
+            users[i] = new User();
+            users[i].setUsername("multi_order_user_" + i);
+            users[i].setPassword("password");
+            users[i].setPointBalance(BigDecimal.ZERO);
             users[i] = userRepository.save(users[i]);
         }
 
         int initialStock = testProduct.getStock();
         ExecutorService executorService = Executors.newFixedThreadPool(userCount);
-        CountDownLatch latch = new CountDownLatch(userCount);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch completionLatch = new CountDownLatch(userCount);
 
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger failCount = new AtomicInteger(0);
 
-        // When: 20명이 동시에 3개씩 주문 (총 60개)
-        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-
+        // When
         for (int i = 0; i < userCount; i++) {
             final int userIndex = i;
             executorService.submit(() -> {
                 try {
-                    transactionTemplate.execute(status -> {
-                        CreateOrderFromProductCommand command = new CreateOrderFromProductCommand(
-                                users[userIndex].getId(),
-                                testProduct.getId(),
-                                orderQuantityPerUser,
-                                null,
-                                null
-                        );
-                        return createOrderFromProductUseCase.execute(command);
-                    });
+                    startLatch.await();
+                    CreateOrderFromProductCommand command = new CreateOrderFromProductCommand(
+                            users[userIndex].getId(),
+                            testProduct.getId(),
+                            orderQuantityPerUser,
+                            null,
+                            null
+                    );
+                    createOrderFromProductUseCase.execute(command);
                     successCount.incrementAndGet();
                 } catch (Exception e) {
-                    System.err.println("Order failed: " + e.getClass().getSimpleName() + " - " + e.getMessage());
-                    e.printStackTrace();
                     failCount.incrementAndGet();
                 } finally {
-                    latch.countDown();
+                    completionLatch.countDown();
                 }
             });
         }
 
-        latch.await();
+        startLatch.countDown();
+        completionLatch.await();
         executorService.shutdown();
 
         // Then
-        // 모두 성공해야 함 (재고 100개, 주문 60개)
         assertThat(successCount.get()).isEqualTo(userCount);
         assertThat(failCount.get()).isEqualTo(0);
 
-        // 재고가 정확히 60개 감소했는지 확인
+        // 재고가 정확히 감소했는지 확인
         Product updatedProduct = productRepository.findById(testProduct.getId()).orElseThrow();
         int expectedRemainingStock = initialStock - (userCount * orderQuantityPerUser);
         assertThat(updatedProduct.getStock()).isEqualTo(expectedRemainingStock);
@@ -305,65 +279,57 @@ public class StockConcurrencyTest {
     @DisplayName("재고가 정확히 주문 수량과 같을 때 모두 성공해야 한다")
     void testConcurrentExactStockMatch() throws InterruptedException {
         // Given
-        // 재고를 정확히 30개로 설정
         testProduct.updateStock(30);
         testProduct = productRepository.save(testProduct);
 
-        int userCount = 30;  // 30명이 동시에 주문
-        int orderQuantityPerUser = 1;  // 각자 1개씩
+        int userCount = 30;
+        int orderQuantityPerUser = 1;
 
-        // 미리 사용자들 생성
+        // 사용자들 생성
         User[] users = new User[userCount];
         for (int i = 0; i < userCount; i++) {
-            users[i] = new User(
-                    "exact_user_" + i,
-                    "password",
-                    BigDecimal.ZERO,
-                    null,
-                    null
-            );
+            users[i] = new User();
+            users[i].setUsername("exact_user_" + i);
+            users[i].setPassword("password");
+            users[i].setPointBalance(BigDecimal.ZERO);
             users[i] = userRepository.save(users[i]);
         }
 
         ExecutorService executorService = Executors.newFixedThreadPool(userCount);
-        CountDownLatch latch = new CountDownLatch(userCount);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch completionLatch = new CountDownLatch(userCount);
 
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger failCount = new AtomicInteger(0);
 
-        // When: 30명이 동시에 1개씩 주문 (재고도 정확히 30개)
-        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-
+        // When
         for (int i = 0; i < userCount; i++) {
             final int userIndex = i;
             executorService.submit(() -> {
                 try {
-                    transactionTemplate.execute(status -> {
-                        CreateOrderFromProductCommand command = new CreateOrderFromProductCommand(
-                                users[userIndex].getId(),
-                                testProduct.getId(),
-                                orderQuantityPerUser,
-                                null,
-                                null
-                        );
-                        return createOrderFromProductUseCase.execute(command);
-                    });
+                    startLatch.await();
+                    CreateOrderFromProductCommand command = new CreateOrderFromProductCommand(
+                            users[userIndex].getId(),
+                            testProduct.getId(),
+                            orderQuantityPerUser,
+                            null,
+                            null
+                    );
+                    createOrderFromProductUseCase.execute(command);
                     successCount.incrementAndGet();
                 } catch (Exception e) {
-                    System.err.println("Order failed: " + e.getClass().getSimpleName() + " - " + e.getMessage());
-                    e.printStackTrace();
                     failCount.incrementAndGet();
                 } finally {
-                    latch.countDown();
+                    completionLatch.countDown();
                 }
             });
         }
 
-        latch.await();
+        startLatch.countDown();
+        completionLatch.await();
         executorService.shutdown();
 
         // Then
-        // 모두 성공해야 함
         assertThat(successCount.get()).isEqualTo(userCount);
         assertThat(failCount.get()).isEqualTo(0);
 

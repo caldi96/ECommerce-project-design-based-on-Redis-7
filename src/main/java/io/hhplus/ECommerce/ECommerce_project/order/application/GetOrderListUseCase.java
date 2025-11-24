@@ -1,49 +1,47 @@
 package io.hhplus.ECommerce.ECommerce_project.order.application;
 
-import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
-import io.hhplus.ECommerce.ECommerce_project.common.exception.UserException;
 import io.hhplus.ECommerce.ECommerce_project.order.application.command.GetOrderListCommand;
 import io.hhplus.ECommerce.ECommerce_project.order.application.dto.OrdersPageResult;
+import io.hhplus.ECommerce.ECommerce_project.order.application.service.OrderFinderService;
 import io.hhplus.ECommerce.ECommerce_project.order.domain.entity.Orders;
-import io.hhplus.ECommerce.ECommerce_project.order.infrastructure.OrderRepository;
-import io.hhplus.ECommerce.ECommerce_project.user.infrastructure.UserRepository;
+import io.hhplus.ECommerce.ECommerce_project.user.application.service.UserFinderService;
+import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
+import io.hhplus.ECommerce.ECommerce_project.user.domain.service.UserDomainService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class GetOrderListUseCase {
 
-    private final OrderRepository orderRepository;
-    private final UserRepository userRepository;
+    private final UserDomainService userDomainService;
+    private final UserFinderService userFinderService;
+    private final OrderFinderService orderFinderService;
 
+    @Transactional(readOnly = true)
     public OrdersPageResult execute(GetOrderListCommand command) {
-        // 1. 사용자 존재 확인
-        userRepository.findById(command.userId())
-                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
-        // 2. Pageable 생성
+        // 1. Id 검증
+        userDomainService.validateId(command.userId());
+
+        // 2. 사용자 존재 확인
+        User user = userFinderService.getUser(command.userId());
+
+        // 3. Pageable 생성
         Pageable pageable = PageRequest.of(command.page(), command.size());
 
-        // 3. 주문 목록 조회 (페이징, 필터링)
-        Page<Orders> ordersPage = orderRepository.findByUserIdWithPaging(
+        // 4. 주문 목록 조회 (페이징, 필터링)
+        Page<Orders> ordersPage = orderFinderService.getOrdersPageByUserId(
                 command.userId(),
                 command.orderStatus(),
                 pageable
         );
 
-        /*
-        // 4. 전체 주문 개수 조회
-        long totalElements = orderRepository.countByUserId(
-                command.userId(),
-                command.orderStatus()
-        );
-         */
-
-        // 4. Response 생성
+        // 5. Response 생성
         return new OrdersPageResult(
                 ordersPage.getContent(),
                 ordersPage.getNumber(),

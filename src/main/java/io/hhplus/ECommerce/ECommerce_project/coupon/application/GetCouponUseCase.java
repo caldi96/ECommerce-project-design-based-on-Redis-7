@@ -1,9 +1,8 @@
 package io.hhplus.ECommerce.ECommerce_project.coupon.application;
 
-import io.hhplus.ECommerce.ECommerce_project.common.exception.CouponException;
-import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
+import io.hhplus.ECommerce.ECommerce_project.coupon.application.service.CouponFinderService;
 import io.hhplus.ECommerce.ECommerce_project.coupon.domain.entity.Coupon;
-import io.hhplus.ECommerce.ECommerce_project.coupon.infrastructure.CouponRepository;
+import io.hhplus.ECommerce.ECommerce_project.coupon.domain.service.CouponDomainService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,11 +11,16 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class GetCouponUseCase {
 
-    private final CouponRepository couponRepository;
+    private final CouponDomainService couponDomainService;
+    private final CouponFinderService couponFinderService;
 
     @Transactional(readOnly = true)
     public Coupon execute(Long id) {
-        return couponRepository.findById(id)
-                .orElseThrow(() -> new CouponException(ErrorCode.COUPON_NOT_FOUND));
+
+        // 1. 쿠폰 ID 검증
+        couponDomainService.validateId(id);
+
+        // 2. 쿠폰 조회 & 반환
+        return couponFinderService.getCoupon(id);
     }
 }

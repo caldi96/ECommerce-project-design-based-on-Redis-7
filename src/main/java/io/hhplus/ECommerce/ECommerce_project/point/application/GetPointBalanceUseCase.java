@@ -1,13 +1,13 @@
 package io.hhplus.ECommerce.ECommerce_project.point.application;
 
-import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
-import io.hhplus.ECommerce.ECommerce_project.common.exception.UserException;
 import io.hhplus.ECommerce.ECommerce_project.point.application.command.GetPointBalanceCommand;
+import io.hhplus.ECommerce.ECommerce_project.point.application.service.PointCalculateService;
+import io.hhplus.ECommerce.ECommerce_project.point.application.service.PointFinderService;
 import io.hhplus.ECommerce.ECommerce_project.point.domain.entity.Point;
-import io.hhplus.ECommerce.ECommerce_project.point.infrastructure.PointRepository;
 import io.hhplus.ECommerce.ECommerce_project.point.presentation.response.GetPointBalanceResponse;
+import io.hhplus.ECommerce.ECommerce_project.user.application.service.UserFinderService;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
-import io.hhplus.ECommerce.ECommerce_project.user.infrastructure.UserRepository;
+import io.hhplus.ECommerce.ECommerce_project.user.domain.service.UserDomainService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,24 +19,27 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GetPointBalanceUseCase {
 
-    private final PointRepository pointRepository;
-    private final UserRepository userRepository;
+    private final UserDomainService userDomainService;
+    private final UserFinderService userFinderService;
+    private final PointFinderService pointFinderService;
+    private final PointCalculateService pointCalculateService;
 
     @Transactional(readOnly = true)
     public GetPointBalanceResponse execute(GetPointBalanceCommand command) {
-        // 1. 사용자 조회
-        User user = userRepository.findById(command.userId())
-                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
-        // 2. 사용 가능한 포인트 목록 조회
-        List<Point> availablePointList = pointRepository.findAvailablePointsByUserId(command.userId());
+        // 1. ID 검증
+        userDomainService.validateId(command.userId());
 
-        // 3. 총 잔액 계산
-        BigDecimal totalBalance = availablePointList.stream()
-                .map(Point::getRemainingAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // 2. 사용자 조회
+        User user = userFinderService.getUser(command.userId());
 
-        // 4. Response 반환
+        // 3. 사용 가능한 포인트 목록 조회
+        List<Point> availablePoints = pointFinderService.getAvailablePoints(command.userId());
+
+        // 4. 총 잔액 계산
+        BigDecimal totalBalance = pointCalculateService.calculateTotalBalance(availablePoints);
+
+        // 5. Response 반환
         return GetPointBalanceResponse.of(user.getId(), totalBalance);
     }
 }

@@ -24,5 +24,14 @@ spring:
     baseline-version: 1
     locations: classpath:db/migration
 
+  redis:
+    host: localhost
+    port: 6380
+    lettuce:
+      pool:
+        max-active: 10
+        max-idle: 10
+        min-idle: 2
+
 server:
   port: 8083

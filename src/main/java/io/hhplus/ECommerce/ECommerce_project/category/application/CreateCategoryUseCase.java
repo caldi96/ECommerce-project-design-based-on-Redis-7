@@ -7,6 +7,7 @@ import io.hhplus.ECommerce.ECommerce_project.category.domain.entity.Category;
 import io.hhplus.ECommerce.ECommerce_project.category.domain.service.CategoryDomainService;
 import io.hhplus.ECommerce.ECommerce_project.category.infrastructure.CategoryRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ public class CreateCategoryUseCase {
     private final CategoryDomainService domainService;
     private final CategoryFinderService finderService;
 
+    @CacheEvict(value = "categoryList", allEntries = true)
     @Transactional
     public Category execute(CreateCategoryCommand command) {
 

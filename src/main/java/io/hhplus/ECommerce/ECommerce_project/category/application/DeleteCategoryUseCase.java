@@ -15,7 +15,7 @@ public class DeleteCategoryUseCase {
     private final CategoryFinderService finderService;
     private final CategoryDomainService domainService;
 
-    @CacheEvict(value = "categoryList", allEntries = true)
+    @CacheEvict(value = "categoryList", allEntries = true, cacheManager = "localCacheManager")
     @Transactional
     public void execute(Long id) {
 

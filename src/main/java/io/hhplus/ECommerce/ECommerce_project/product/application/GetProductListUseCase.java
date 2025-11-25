@@ -6,6 +6,7 @@ import io.hhplus.ECommerce.ECommerce_project.product.application.enums.ProductSo
 import io.hhplus.ECommerce.ECommerce_project.product.application.service.ProductFinderService;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +21,12 @@ public class GetProductListUseCase {
     private final CategoryDomainService categoryDomainService;
     private final ProductFinderService productFinderService;
 
+    @Cacheable(
+            value = "productList",
+            key = "#categoryId + '_' + #sortType + '_' + #page + '_' + #size",
+            condition = "#page == 0",   // 첫 페이지만 캐싱
+            cacheManager = "redisCacheManager"
+    )
     @Transactional(readOnly = true)
     public ProductPageResult execute(Long categoryId, ProductSortType sortType, int page, int size) {
 

@@ -18,7 +18,7 @@ public class UpdateCategoryUseCase {
     private final CategoryFinderService finderService;
     private final CategoryDomainService domainService;
 
-    @CacheEvict(value = "categoryList", allEntries = true)
+    @CacheEvict(value = "categoryList", allEntries = true, cacheManager = "localCacheManager")
     @Transactional
     public Category execute(UpdateCategoryCommand command) {
 

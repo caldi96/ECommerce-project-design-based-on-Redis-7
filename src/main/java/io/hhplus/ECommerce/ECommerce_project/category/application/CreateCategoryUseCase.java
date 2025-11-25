@@ -1,7 +1,6 @@
 package io.hhplus.ECommerce.ECommerce_project.category.application;
 
 import io.hhplus.ECommerce.ECommerce_project.category.application.command.CreateCategoryCommand;
-import io.hhplus.ECommerce.ECommerce_project.category.application.service.CategoryFinderService;
 import io.hhplus.ECommerce.ECommerce_project.category.application.service.CategoryValidatorService;
 import io.hhplus.ECommerce.ECommerce_project.category.domain.entity.Category;
 import io.hhplus.ECommerce.ECommerce_project.category.domain.service.CategoryDomainService;
@@ -18,9 +17,8 @@ public class CreateCategoryUseCase {
     private final CategoryRepository categoryRepository;
     private final CategoryValidatorService appValidatorService;
     private final CategoryDomainService domainService;
-    private final CategoryFinderService finderService;
 
-    @CacheEvict(value = "categoryList", allEntries = true)
+    @CacheEvict(value = "categoryList", allEntries = true, cacheManager = "localCacheManager")
     @Transactional
     public Category execute(CreateCategoryCommand command) {
 

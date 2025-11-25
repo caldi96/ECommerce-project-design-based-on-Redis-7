@@ -7,6 +7,7 @@ import io.hhplus.ECommerce.ECommerce_project.product.application.service.Product
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.service.ProductDomainService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ public class UpdateProductUseCase {
     private final ProductFinderService productFinderService;
     private final CategoryFinderService categoryFinderService;
 
+    @CacheEvict(value = "productList", allEntries = true, cacheManager = "redisCacheManager")
     @Transactional
     public Product execute(UpdateProductCommand command) {
 
@@ -64,7 +66,7 @@ public class UpdateProductUseCase {
             }
         }
 
-        // 4. 저장된 변경사항 반환
+        // 4. 저장된 변경사항 반환 (캐시는 @CacheEvict로 자동 무효화)
         return product;
     }
 

@@ -15,7 +15,7 @@ public class GetCategoryListUseCase {
 
     private final CategoryFinderService finderService;
 
-    @Cacheable(value = "categoryList")
+    @Cacheable(value = "categoryList", cacheManager = "localCacheManager")
     @Transactional(readOnly = true)
     public List<Category> execute() {
         // 조회는 FinderService에 위임

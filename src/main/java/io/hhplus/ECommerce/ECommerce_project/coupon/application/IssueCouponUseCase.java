@@ -1,8 +1,8 @@
 package io.hhplus.ECommerce.ECommerce_project.coupon.application;
 
+import io.hhplus.ECommerce.ECommerce_project.common.annotation.DistributedLock;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.CouponException;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
-import io.hhplus.ECommerce.ECommerce_project.common.lock.DistributedLockManager;
 import io.hhplus.ECommerce.ECommerce_project.coupon.application.command.IssueCouponCommand;
 import io.hhplus.ECommerce.ECommerce_project.coupon.application.service.CouponFinderService;
 import io.hhplus.ECommerce.ECommerce_project.coupon.application.service.UserCouponValidatorService;
@@ -16,10 +16,6 @@ import io.hhplus.ECommerce.ECommerce_project.user.domain.service.UserDomainServi
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -31,33 +27,16 @@ public class IssueCouponUseCase {
     private final UserFinderService userFinderService;
     private final CouponFinderService couponFinderService;
     private final UserCouponValidatorService userCouponValidatorService;
-    private final DistributedLockManager distributedLockManager;
 
     /**
-     * 선착순 쿠폰 발급 (Redis 분산 락 사용)
-     * - 락 획득 → 트랜잭션 시작 → 비즈니스 로직 → 트랜잭션 종료 → 락 해제
-     * - 쿠폰 ID별 락으로 동시성 제어
+     * Redis 분산 락 + REQUIRES_NEW 트랜잭션 자동 적용됨
      */
+    @DistributedLock(
+            key = "'coupon:issue:' + #command.couponId()",
+            waitTime = 2L,
+            leaseTime = 5L
+    )
     public UserCoupon execute(IssueCouponCommand command) {
-        String lockKey = "coupon:issue:" + command.couponId();
-
-        // 분산락 획득 후 트랜잭션 실행
-        return distributedLockManager.executeWithLock(
-                lockKey,
-                2L,
-                5L,
-                TimeUnit.SECONDS,
-                () -> executeWithTransaction(command)
-        );
-    }
-
-    /**
-     * 트랜잭션 내에서 실행되는 실제 비즈니스 로직
-     * - 분산 락 획득 후 호출됨
-     * - REQUIRES_NEW로 새로운 트랜잭션 시작 (명확한 트랜잭션 경계)
-     */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public UserCoupon executeWithTransaction(IssueCouponCommand command) {
 
         userDomainService.validateId(command.userId());
         couponDomainService.validateId(command.couponId());

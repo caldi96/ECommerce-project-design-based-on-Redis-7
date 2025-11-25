@@ -15,6 +15,9 @@ public enum ErrorCode {
     INVALID_INPUT_VALUE("입력값이 올바르지 않습니다.", HttpStatus.BAD_REQUEST),
     INTERNAL_SERVER_ERROR("서버 내부 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
+    // ===== Lock =====
+    LOCK_ACQUISITION_FAILED("락 획득 실패", HttpStatus.CONFLICT),
+
     // ===== User =====
     USER_NOT_FOUND("사용자를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     USER_ID_INVALID("USER ID는 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST),

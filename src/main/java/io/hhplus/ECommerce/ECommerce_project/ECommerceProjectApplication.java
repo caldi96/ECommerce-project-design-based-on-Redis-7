@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableRetry
 @EnableScheduling  // StockSyncScheduler 동작
-@EnableAsync       // 비동기 처리 동작
+@EnableAsync       // StockEventListener 비동기 처리 동작
 public class ECommerceProjectApplication {
 
 	public static void main(String[] args) {

@@ -16,6 +16,7 @@ import io.hhplus.ECommerce.ECommerce_project.point.application.service.PointUsag
 import io.hhplus.ECommerce.ECommerce_project.point.domain.entity.Point;
 import io.hhplus.ECommerce.ECommerce_project.point.domain.entity.PointUsageHistory;
 import io.hhplus.ECommerce.ECommerce_project.product.application.service.ProductFinderService;
+import io.hhplus.ECommerce.ECommerce_project.product.application.service.RedisStockService;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
 import io.hhplus.ECommerce.ECommerce_project.user.application.service.UserFinderService;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
@@ -41,6 +42,7 @@ public class CancelOrderUseCase {
     private final UserCouponFinderService userCouponFinderService;
     private final PointFinderService pointFinderService;
     private final PointUsageHistoryFinderService pointUsageHistoryFinderService;
+    private final RedisStockService redisStockService;
 
     @Transactional
     public void execute(CancelOrderCommand command) {
@@ -66,11 +68,16 @@ public class CancelOrderUseCase {
 
         // 7. 상품 재고 복구 (동시성 제어 적용, 여러 사람이 동시에 주문 취소시 재고 복구에 동시성 이슈 발생 가능)
         for (OrderItem orderItem : orderItems) {
+            Long productId = orderItem.getProduct().getId();
+
             // 7-1. 주문 아이템의 상품 조회(비관적 락)
             Product product = productFinderService.getProductWithLock(orderItem.getProduct().getId());
 
-            // 7-2. 해당 상품 재고 증가(복구)
+            // 7-2. 해당 상품 재고 증가(DB 복구)
             product.increaseStock(orderItem.getQuantity());
+
+            // 7-3. Redis 재고 복구
+            redisStockService.setStock(productId, product.getStock());
         }
 
         // 8. 쿠폰 복구

@@ -1,6 +1,7 @@
 package io.hhplus.ECommerce.ECommerce_project.product.application;
 
 import io.hhplus.ECommerce.ECommerce_project.product.application.service.ProductFinderService;
+import io.hhplus.ECommerce.ECommerce_project.product.application.service.RedisStockService;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.service.ProductDomainService;
 import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductCacheInvalidator;
@@ -15,6 +16,7 @@ public class DeleteProductUseCase {
     private final ProductDomainService productDomainService;
     private final ProductFinderService productFinderService;
     private final ProductCacheInvalidator productCacheInvalidator;
+    private final RedisStockService redisStockService;
 
     @Transactional
     public void execute(Long productId) {
@@ -29,7 +31,10 @@ public class DeleteProductUseCase {
         // 3. 논리적 삭제 (deletedAt 설정 및 비활성화)
         product.delete();
 
-        // 캐시 무효화
+        // 4. Redis 재고 삭제
+        redisStockService.deleteStock(productId);
+
+        // 5. 캐시 무효화
         productCacheInvalidator.evictProductListCache(categoryId);
     }
 }

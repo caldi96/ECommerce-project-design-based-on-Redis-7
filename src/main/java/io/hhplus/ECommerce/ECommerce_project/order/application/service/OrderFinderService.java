@@ -10,6 +10,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class OrderFinderService {
@@ -41,5 +44,12 @@ public class OrderFinderService {
                 orderStatus,
                 pageable
         );
+    }
+
+    /**
+     * 15분 이상 PENDING 상태인 주문 목록
+     */
+    public List<Orders> getExpiredOrders(OrderStatus status, LocalDateTime dateTime) {
+        return orderRepository.findByStatusAndCreatedAtBefore(status, dateTime);
     }
 }

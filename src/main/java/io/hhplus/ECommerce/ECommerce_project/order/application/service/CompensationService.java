@@ -1,8 +1,10 @@
-package io.hhplus.ECommerce.ECommerce_project.payment.application.service;
+package io.hhplus.ECommerce.ECommerce_project.order.application.service;
 
-import io.hhplus.ECommerce.ECommerce_project.common.exception.*;
+import io.hhplus.ECommerce.ECommerce_project.common.exception.CouponException;
+import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
+import io.hhplus.ECommerce.ECommerce_project.common.exception.ProductException;
+import io.hhplus.ECommerce.ECommerce_project.common.exception.UserException;
 import io.hhplus.ECommerce.ECommerce_project.coupon.application.service.CouponCompensationService;
-import io.hhplus.ECommerce.ECommerce_project.order.application.service.OrderItemFinderService;
 import io.hhplus.ECommerce.ECommerce_project.order.domain.entity.OrderItem;
 import io.hhplus.ECommerce.ECommerce_project.order.domain.entity.Orders;
 import io.hhplus.ECommerce.ECommerce_project.point.application.service.PointCompensationService;
@@ -14,7 +16,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class PaymentCompensationService {
+public class CompensationService {
 
     private final OrderItemFinderService orderItemFinderService;
     private final StockService stockService;

@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Orders, Long> {
@@ -44,4 +46,7 @@ public interface OrderRepository extends JpaRepository<Orders, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT o FROM Orders o WHERE o.id = :orderId")
     Optional<Orders> findByIdWithLock(@Param("orderId") Long orderId);
+
+    // 15분 이상 PENDING 상태인 주문 목록
+    List<Orders> findByStatusAndCreatedAtBefore(OrderStatus status, LocalDateTime dateTime);
 }

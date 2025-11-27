@@ -23,7 +23,7 @@ public class PointCompensationService {
     /**
      * 주문 취소/결제 실패 시 포인트 복구
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.MANDATORY)
     public void compensate(Long orderId, Long userId) {
         // 1. 포인트 사용 이력 조회
         List<PointUsageHistory> histories =

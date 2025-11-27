@@ -17,7 +17,7 @@ public class CouponCompensationService {
     /**
      * 주문 취소/결제 실패 시 쿠폰 복구
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.MANDATORY)
     public void compensate(Long userId, Long couponId, Integer perUserLimit) {
         UserCoupon userCoupon = userCouponFinderService
                 .getUserCouponByUserIdAndCouponId(userId, couponId)

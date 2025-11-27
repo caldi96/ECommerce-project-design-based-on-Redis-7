@@ -22,6 +22,7 @@ import io.hhplus.ECommerce.ECommerce_project.payment.infrastructure.PaymentRepos
 import io.hhplus.ECommerce.ECommerce_project.payment.presentation.response.CreatePaymentResponse;
 import io.hhplus.ECommerce.ECommerce_project.point.domain.entity.Point;
 import io.hhplus.ECommerce.ECommerce_project.point.infrastructure.PointRepository;
+import io.hhplus.ECommerce.ECommerce_project.product.application.service.RedisStockService;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
 import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductRepository;
 import io.hhplus.ECommerce.ECommerce_project.order.infrastructure.OrderItemRepository;
@@ -82,6 +83,9 @@ class CreatePaymentUseCaseIntegrationTest {
     @Autowired
     private PointUsageHistoryRepository pointUsageHistoryRepository;
 
+    @Autowired
+    private RedisStockService redisStockService;
+
     private User testUser;
     private Category testCategory;
     private Product testProduct;
@@ -110,10 +114,18 @@ class CreatePaymentUseCaseIntegrationTest {
                 10
         );
         testProduct = productRepository.save(testProduct);
+
+        // Redis에 재고 초기화
+        redisStockService.setStock(testProduct.getId(), testProduct.getStock());
     }
 
     @AfterEach
     void tearDown() {
+        // Redis 재고 삭제
+        if (testProduct != null) {
+            redisStockService.deleteStock(testProduct.getId());
+        }
+
         // 외래 키 제약조건을 고려한 순서로 삭제
         // 1. 결제 삭제
         paymentRepository.deleteAll();

@@ -17,6 +17,7 @@ import io.hhplus.ECommerce.ECommerce_project.order.presentation.response.CreateO
 import io.hhplus.ECommerce.ECommerce_project.point.domain.entity.Point;
 import io.hhplus.ECommerce.ECommerce_project.point.infrastructure.PointRepository;
 import io.hhplus.ECommerce.ECommerce_project.point.infrastructure.PointUsageHistoryRepository;
+import io.hhplus.ECommerce.ECommerce_project.product.application.service.RedisStockService;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
 import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductRepository;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
@@ -69,6 +70,9 @@ class CreateOrderFromProductUseCaseIntegrationTest {
     @Autowired
     private OrderItemRepository orderItemRepository;
 
+    @Autowired
+    private RedisStockService redisStockService;
+
     private User testUser;
     private Category testCategory;
     private Product testProduct;
@@ -97,10 +101,18 @@ class CreateOrderFromProductUseCaseIntegrationTest {
                 10
         );
         testProduct = productRepository.save(testProduct);
+
+        // Redis에 재고 초기화
+        redisStockService.setStock(testProduct.getId(), testProduct.getStock());
     }
 
     @AfterEach
     void tearDown() {
+        // Redis 재고 삭제
+        if (testProduct != null) {
+            redisStockService.deleteStock(testProduct.getId());
+        }
+
         // 외래 키 제약조건을 고려한 순서로 삭제
         pointUsageHistoryRepository.deleteAll();
         orderItemRepository.deleteAll();
@@ -140,12 +152,9 @@ class CreateOrderFromProductUseCaseIntegrationTest {
         assertThat(order.getUser().getId()).isEqualTo(testUser.getId());
         assertThat(order.getTotalAmount()).isEqualByComparingTo(BigDecimal.valueOf(30000)); // 10000 * 3
 
-        // 재고 감소 확인
-        Product updatedProduct = productRepository.findById(testProduct.getId()).orElseThrow();
-        assertThat(updatedProduct.getStock()).isEqualTo(initialStock - 3);
-
-        // 판매량 증가 확인
-        assertThat(updatedProduct.getSoldCount()).isEqualTo(3);
+        // Redis 재고 감소 확인 (재고는 Redis에서 즉시 차감됨)
+        Long redisStock = redisStockService.getStock(testProduct.getId());
+        assertThat(redisStock).isEqualTo(initialStock - 3);
     }
 
     @Test
@@ -292,6 +301,9 @@ class CreateOrderFromProductUseCaseIntegrationTest {
         // 재고를 5개로 줄임
         testProduct.updateStock(5);
         productRepository.save(testProduct);
+
+        // Redis 재고도 업데이트
+        redisStockService.setStock(testProduct.getId(), 5);
 
         CreateOrderFromProductCommand command = new CreateOrderFromProductCommand(
                 testUser.getId(),

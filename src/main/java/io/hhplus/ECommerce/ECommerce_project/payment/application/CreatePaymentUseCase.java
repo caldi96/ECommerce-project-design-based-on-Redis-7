@@ -6,7 +6,7 @@ import io.hhplus.ECommerce.ECommerce_project.order.application.service.OrderFind
 import io.hhplus.ECommerce.ECommerce_project.order.domain.entity.Orders;
 import io.hhplus.ECommerce.ECommerce_project.order.domain.service.OrderDomainService;
 import io.hhplus.ECommerce.ECommerce_project.payment.application.command.CreatePaymentCommand;
-import io.hhplus.ECommerce.ECommerce_project.payment.application.service.PaymentCompensationService;
+import io.hhplus.ECommerce.ECommerce_project.order.application.service.CompensationService;
 import io.hhplus.ECommerce.ECommerce_project.payment.domain.entity.Payment;
 import io.hhplus.ECommerce.ECommerce_project.payment.infrastructure.PaymentRepository;
 import io.hhplus.ECommerce.ECommerce_project.payment.presentation.response.CreatePaymentResponse;
@@ -21,7 +21,7 @@ public class CreatePaymentUseCase {
     private final PaymentRepository paymentRepository;
     private final OrderDomainService orderDomainService;
     private final OrderFinderService orderFinderService;
-    private final PaymentCompensationService paymentCompensationService;
+    private final CompensationService compensationService;
 
     @Transactional
     public CreatePaymentResponse execute(CreatePaymentCommand command) {
@@ -65,7 +65,7 @@ public class CreatePaymentUseCase {
             order.paymentFailed();
 
             // Saga 패턴: 주문 생성 시 차감한 리소스 복구 (보상 트랜잭션)
-            paymentCompensationService.compensate(order);
+            compensationService.compensate(order);
 
             // 예외를 다시 던져서 트랜잭션이 롤백되도록 함
             throw new PaymentException(ErrorCode.PAYMENT_ALREADY_FAILED,

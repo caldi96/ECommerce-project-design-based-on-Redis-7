@@ -9,6 +9,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class ProductFinderService {
@@ -37,6 +39,13 @@ public class ProductFinderService {
     public Product getProductWithLock(Long productId) {
         return productRepository.findByIdWithLock(productId)
                 .orElseThrow(() -> new ProductException(ErrorCode.PRODUCT_NOT_FOUND));
+    }
+
+    /**
+     * 전체 상품 조회
+     */
+    public List<Product> getAllProduct() {
+        return productRepository.findAll();
     }
 
     /**

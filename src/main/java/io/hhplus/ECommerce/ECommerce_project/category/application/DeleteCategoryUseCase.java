@@ -4,6 +4,7 @@ import io.hhplus.ECommerce.ECommerce_project.category.application.service.Catego
 import io.hhplus.ECommerce.ECommerce_project.category.domain.entity.Category;
 import io.hhplus.ECommerce.ECommerce_project.category.domain.service.CategoryDomainService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,7 @@ public class DeleteCategoryUseCase {
     private final CategoryFinderService finderService;
     private final CategoryDomainService domainService;
 
+    @CacheEvict(value = "categoryList", allEntries = true, cacheManager = "localCacheManager")
     @Transactional
     public void execute(Long id) {
 

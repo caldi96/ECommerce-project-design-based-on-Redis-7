@@ -342,13 +342,6 @@ public class Product extends BaseEntity {
     }
 
     /**
-     * 활성 상품 여부
-     */
-    public boolean isActiveProduct() {
-        return this.isActive;
-    }
-
-    /**
      * 품절 여부 (계산 메서드)
      */
     public boolean isOutOfStock() {

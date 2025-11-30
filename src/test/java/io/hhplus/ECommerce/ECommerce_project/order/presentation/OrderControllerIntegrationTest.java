@@ -17,6 +17,7 @@ import io.hhplus.ECommerce.ECommerce_project.order.presentation.request.CreateOr
 import io.hhplus.ECommerce.ECommerce_project.point.domain.entity.Point;
 import io.hhplus.ECommerce.ECommerce_project.point.infrastructure.PointRepository;
 import io.hhplus.ECommerce.ECommerce_project.point.infrastructure.PointUsageHistoryRepository;
+import io.hhplus.ECommerce.ECommerce_project.product.application.service.RedisStockService;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
 import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductRepository;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
@@ -82,6 +83,9 @@ class OrderControllerIntegrationTest {
     @Autowired
     private OrderItemRepository orderItemRepository;
 
+    @Autowired
+    private RedisStockService redisStockService;
+
     private User testUser;
     private Category testCategory;
     private Product testProduct1;
@@ -123,10 +127,22 @@ class OrderControllerIntegrationTest {
                 5
         );
         testProduct2 = productRepository.save(testProduct2);
+
+        // Redis에 재고 초기화
+        redisStockService.setStock(testProduct1.getId(), testProduct1.getStock());
+        redisStockService.setStock(testProduct2.getId(), testProduct2.getStock());
     }
 
     @AfterEach
     void tearDown() {
+        // Redis 재고 삭제
+        if (testProduct1 != null) {
+            redisStockService.deleteStock(testProduct1.getId());
+        }
+        if (testProduct2 != null) {
+            redisStockService.deleteStock(testProduct2.getId());
+        }
+
         // 외래 키 제약조건을 고려한 순서로 삭제
         // 1. 주문 관련 삭제 (자식 먼저)
         pointUsageHistoryRepository.deleteAll();
@@ -422,6 +438,9 @@ class OrderControllerIntegrationTest {
         // Given
         testProduct1.updateStock(2);  // 재고를 2개로 줄임
         productRepository.save(testProduct1);
+
+        // Redis 재고도 업데이트
+        redisStockService.setStock(testProduct1.getId(), 2);
 
         CreateOrderFromProductRequest request = new CreateOrderFromProductRequest(
                 testUser.getId(),

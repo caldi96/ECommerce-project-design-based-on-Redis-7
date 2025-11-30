@@ -2,7 +2,9 @@ package io.hhplus.ECommerce.ECommerce_project.product.application;
 
 import io.hhplus.ECommerce.ECommerce_project.category.application.service.CategoryFinderService;
 import io.hhplus.ECommerce.ECommerce_project.product.application.command.CreateProductCommand;
+import io.hhplus.ECommerce.ECommerce_project.product.application.service.RedisStockService;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
+import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductCacheInvalidator;
 import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,6 +16,8 @@ public class CreateProductUseCase {
 
     private final ProductRepository productRepository;
     private final CategoryFinderService categoryFinderService;
+    private final ProductCacheInvalidator productCacheInvalidator;
+    private final RedisStockService redisStockService;
 
     @Transactional
     public Product execute(CreateProductCommand command) {
@@ -29,6 +33,17 @@ public class CreateProductUseCase {
         );
 
         // 2. 저장 후 반환
-        return productRepository.save(product);
+        Product savedProduct = productRepository.save(product);
+
+        // 3. Redis 재고 초기화
+        redisStockService.setStock(
+                savedProduct.getId(),
+                savedProduct.getStock()
+        );
+
+        // 4. 캐시 무효화 (해당 카테고리만)
+        productCacheInvalidator.evictProductListCache(command.categoryId());
+
+        return savedProduct;
     }
 }

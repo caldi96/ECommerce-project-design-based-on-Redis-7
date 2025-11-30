@@ -15,6 +15,7 @@ import io.hhplus.ECommerce.ECommerce_project.payment.domain.entity.Payment;
 import io.hhplus.ECommerce.ECommerce_project.payment.domain.enums.PaymentMethod;
 import io.hhplus.ECommerce.ECommerce_project.payment.domain.enums.PaymentStatus;
 import io.hhplus.ECommerce.ECommerce_project.payment.infrastructure.PaymentRepository;
+import io.hhplus.ECommerce.ECommerce_project.product.application.service.RedisStockService;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
 import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductRepository;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
@@ -71,6 +72,9 @@ public class PaymentConcurrencyTest {
     @Autowired
     private CategoryRepository categoryRepository;
 
+    @Autowired
+    private RedisStockService redisStockService;
+
     private Product testProduct;
     private Category testCategory;
 
@@ -84,8 +88,8 @@ public class PaymentConcurrencyTest {
         categoryRepository.deleteAll();
         userRepository.deleteAll();
 
-        // 테스트 카테고리 생성
-        testCategory = Category.createCategory("테스트카테고리", 1);
+        // 테스트 카테고리 생성 (고유한 순서 사용, 1-10000)
+        testCategory = Category.createCategory("결제테스트카테고리", (int) (System.currentTimeMillis() % 10000) + 1);
         testCategory = categoryRepository.save(testCategory);
 
         // 테스트용 상품 생성
@@ -99,6 +103,9 @@ public class PaymentConcurrencyTest {
                 10
         );
         testProduct = productRepository.save(testProduct);
+
+        // 레디스 재고 동기화 (중요!)
+        redisStockService.setStock(testProduct.getId(), testProduct.getStock());
     }
 
     @Test

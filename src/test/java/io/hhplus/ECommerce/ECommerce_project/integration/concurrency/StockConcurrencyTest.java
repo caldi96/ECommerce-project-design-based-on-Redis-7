@@ -6,6 +6,7 @@ import io.hhplus.ECommerce.ECommerce_project.order.application.CreateOrderFromPr
 import io.hhplus.ECommerce.ECommerce_project.order.application.command.CreateOrderFromProductCommand;
 import io.hhplus.ECommerce.ECommerce_project.order.infrastructure.OrderItemRepository;
 import io.hhplus.ECommerce.ECommerce_project.order.infrastructure.OrderRepository;
+import io.hhplus.ECommerce.ECommerce_project.product.application.service.RedisStockService;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
 import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductRepository;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
@@ -55,6 +56,9 @@ public class StockConcurrencyTest {
     @Autowired
     private OrderItemRepository orderItemRepository;
 
+    @Autowired
+    private RedisStockService redisStockService;
+
     private Product testProduct;
     private Category testCategory;
 
@@ -67,8 +71,8 @@ public class StockConcurrencyTest {
         userRepository.deleteAll();
         categoryRepository.deleteAll();
 
-        // 테스트 카테고리 생성
-        testCategory = Category.createCategory("테스트카테고리", 1);
+        // 테스트 카테고리 생성 (고유한 순서 사용, 1-10000)
+        testCategory = Category.createCategory("재고테스트카테고리", (int) (System.currentTimeMillis() % 10000) + 1);
         testCategory = categoryRepository.save(testCategory);
 
         // 테스트용 상품 생성 (재고 100개)
@@ -82,6 +86,9 @@ public class StockConcurrencyTest {
                 10
         );
         testProduct = productRepository.save(testProduct);
+
+        // 레디스 재고 동기화 (중요!)
+        redisStockService.setStock(testProduct.getId(), testProduct.getStock());
     }
 
     @Test
@@ -140,10 +147,9 @@ public class StockConcurrencyTest {
         assertThat(successCount.get()).isEqualTo(userCount);
         assertThat(failCount.get()).isEqualTo(0);
 
-        // 재고가 정확히 감소했는지 확인
-        Product updatedProduct = productRepository.findById(testProduct.getId()).orElseThrow();
-        assertThat(updatedProduct.getStock()).isEqualTo(initialStock - userCount * orderQuantityPerUser);
-        assertThat(updatedProduct.getSoldCount()).isEqualTo(userCount * orderQuantityPerUser);
+        // 레디스 재고가 정확히 감소했는지 확인
+        Long remainingStock = redisStockService.getStock(testProduct.getId());
+        assertThat(remainingStock).isEqualTo(initialStock - userCount * orderQuantityPerUser);
     }
 
     @Test
@@ -153,6 +159,9 @@ public class StockConcurrencyTest {
         // 재고를 20개로 설정
         testProduct.updateStock(20);
         testProduct = productRepository.save(testProduct);
+
+        // 레디스 재고도 업데이트
+        redisStockService.setStock(testProduct.getId(), testProduct.getStock());
 
         int userCount = 50;
         int orderQuantityPerUser = 1;
@@ -206,10 +215,9 @@ public class StockConcurrencyTest {
         assertThat(successCount.get()).isEqualTo(initialStock);
         assertThat(failCount.get()).isEqualTo(userCount - initialStock);
 
-        // 재고가 0이 되어야 함
-        Product updatedProduct = productRepository.findById(testProduct.getId()).orElseThrow();
-        assertThat(updatedProduct.getStock()).isEqualTo(0);
-        assertThat(updatedProduct.getSoldCount()).isEqualTo(initialStock);
+        // 레디스 재고가 0이 되어야 함
+        Long remainingStock = redisStockService.getStock(testProduct.getId());
+        assertThat(remainingStock).isEqualTo(0);
     }
 
     @Test
@@ -268,11 +276,10 @@ public class StockConcurrencyTest {
         assertThat(successCount.get()).isEqualTo(userCount);
         assertThat(failCount.get()).isEqualTo(0);
 
-        // 재고가 정확히 감소했는지 확인
-        Product updatedProduct = productRepository.findById(testProduct.getId()).orElseThrow();
+        // 레디스 재고가 정확히 감소했는지 확인
+        Long remainingStock = redisStockService.getStock(testProduct.getId());
         int expectedRemainingStock = initialStock - (userCount * orderQuantityPerUser);
-        assertThat(updatedProduct.getStock()).isEqualTo(expectedRemainingStock);
-        assertThat(updatedProduct.getSoldCount()).isEqualTo(userCount * orderQuantityPerUser);
+        assertThat(remainingStock).isEqualTo(expectedRemainingStock);
     }
 
     @Test
@@ -281,6 +288,9 @@ public class StockConcurrencyTest {
         // Given
         testProduct.updateStock(30);
         testProduct = productRepository.save(testProduct);
+
+        // 레디스 재고도 업데이트
+        redisStockService.setStock(testProduct.getId(), testProduct.getStock());
 
         int userCount = 30;
         int orderQuantityPerUser = 1;
@@ -333,9 +343,8 @@ public class StockConcurrencyTest {
         assertThat(successCount.get()).isEqualTo(userCount);
         assertThat(failCount.get()).isEqualTo(0);
 
-        // 재고가 정확히 0이 되어야 함
-        Product updatedProduct = productRepository.findById(testProduct.getId()).orElseThrow();
-        assertThat(updatedProduct.getStock()).isEqualTo(0);
-        assertThat(updatedProduct.getSoldCount()).isEqualTo(30);
+        // 레디스 재고가 정확히 0이 되어야 함
+        Long remainingStock = redisStockService.getStock(testProduct.getId());
+        assertThat(remainingStock).isEqualTo(0);
     }
 }

@@ -20,6 +20,7 @@ import io.hhplus.ECommerce.ECommerce_project.order.presentation.response.CreateO
 import io.hhplus.ECommerce.ECommerce_project.point.domain.entity.Point;
 import io.hhplus.ECommerce.ECommerce_project.point.infrastructure.PointRepository;
 import io.hhplus.ECommerce.ECommerce_project.point.infrastructure.PointUsageHistoryRepository;
+import io.hhplus.ECommerce.ECommerce_project.product.application.service.RedisStockService;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
 import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductRepository;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
@@ -76,6 +77,9 @@ class CreateOrderFromCartUseCaseIntegrationTest {
     @Autowired
     private OrderItemRepository orderItemRepository;
 
+    @Autowired
+    private RedisStockService redisStockService;
+
     private User testUser;
     private Category testCategory;
     private Product testProduct1;
@@ -117,10 +121,22 @@ class CreateOrderFromCartUseCaseIntegrationTest {
                 5
         );
         testProduct2 = productRepository.save(testProduct2);
+
+        // Redis에 재고 초기화
+        redisStockService.setStock(testProduct1.getId(), testProduct1.getStock());
+        redisStockService.setStock(testProduct2.getId(), testProduct2.getStock());
     }
 
     @AfterEach
     void tearDown() {
+        // Redis 재고 삭제
+        if (testProduct1 != null) {
+            redisStockService.deleteStock(testProduct1.getId());
+        }
+        if (testProduct2 != null) {
+            redisStockService.deleteStock(testProduct2.getId());
+        }
+
         // 외래 키 제약조건을 고려한 순서로 삭제
         cartRepository.deleteAll();
         pointUsageHistoryRepository.deleteAll();
@@ -167,15 +183,11 @@ class CreateOrderFromCartUseCaseIntegrationTest {
         assertThat(order.getUser().getId()).isEqualTo(testUser.getId());
         assertThat(order.getTotalAmount()).isEqualByComparingTo(BigDecimal.valueOf(40000)); // 상품 총액 (상품1: 20000 + 상품2: 20000)
 
-        // 재고 감소 확인
-        Product updatedProduct1 = productRepository.findById(testProduct1.getId()).orElseThrow();
-        Product updatedProduct2 = productRepository.findById(testProduct2.getId()).orElseThrow();
-        assertThat(updatedProduct1.getStock()).isEqualTo(initialStock1 - 2);
-        assertThat(updatedProduct2.getStock()).isEqualTo(initialStock2 - 1);
-
-        // 판매량 증가 확인
-        assertThat(updatedProduct1.getSoldCount()).isEqualTo(2);
-        assertThat(updatedProduct2.getSoldCount()).isEqualTo(1);
+        // Redis 재고 감소 확인 (재고는 Redis에서 즉시 차감됨)
+        Long redisStock1 = redisStockService.getStock(testProduct1.getId());
+        Long redisStock2 = redisStockService.getStock(testProduct2.getId());
+        assertThat(redisStock1).isEqualTo(initialStock1 - 2);
+        assertThat(redisStock2).isEqualTo(initialStock2 - 1);
 
         // 장바구니 삭제 확인
         assertThat(cartRepository.findById(cart1.getId())).isEmpty();
@@ -336,6 +348,9 @@ class CreateOrderFromCartUseCaseIntegrationTest {
         testProduct1.updateStock(1);
         productRepository.save(testProduct1);
 
+        // Redis 재고도 업데이트
+        redisStockService.setStock(testProduct1.getId(), 1);
+
         CreateOrderFromCartCommand command = new CreateOrderFromCartCommand(
                 testUser.getId(),
                 List.of(cart.getId()),
@@ -426,9 +441,8 @@ class CreateOrderFromCartUseCaseIntegrationTest {
         assertThat(response).isNotNull();
         assertThat(response.orderItems()).hasSize(2);
 
-        // 재고가 총 5개(2+3) 감소했는지 확인
-        Product updatedProduct = productRepository.findById(testProduct1.getId()).orElseThrow();
-        assertThat(updatedProduct.getStock()).isEqualTo(initialStock - 5);
-        assertThat(updatedProduct.getSoldCount()).isEqualTo(5);
+        // Redis 재고가 총 5개(2+3) 감소했는지 확인
+        Long redisStock = redisStockService.getStock(testProduct1.getId());
+        assertThat(redisStock).isEqualTo(initialStock - 5);
     }
 }

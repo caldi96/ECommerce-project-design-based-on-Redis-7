@@ -48,6 +48,20 @@ dependencies {
 	// Flyway는 기본적으로 db/migration 폴더를 탐색
 	implementation 'org.flywaydb:flyway-mysql'
 
+	// Redis & Redisson 추가
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'org.redisson:redisson-spring-boot-starter:3.24.3'
+
+	// Spring AOP for custom annotations
+	implementation 'org.springframework.boot:spring-boot-starter-aop'
+
+	// Spring Cache & Caffeine for local caching
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
+	implementation 'com.github.ben-manes.caffeine:caffeine'
+
+	// Jackson Hibernate Module (for Hibernate Lazy Loading Proxy serialization)
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-hibernate5-jakarta'
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

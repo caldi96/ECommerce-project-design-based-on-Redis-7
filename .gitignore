@@ -47,6 +47,12 @@ application-local.properties
 application-secret.yml
 application-secret.properties
 
+### jmeter test ###
+/report_no_cache
+ProductList_CacheTest.jmx
+jmeter.log
+results_no_cache.jtl
+
 # macOS
 .DS_Store
 .AppleDouble

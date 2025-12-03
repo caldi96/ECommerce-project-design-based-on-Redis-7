@@ -67,7 +67,8 @@ public class ProductRankingEventListener {
      * - 트랜잭션 커밋 후 Redis 조회수 증가
      * - 비동기로 처리되어 상품 조회 응답 속도에 영향 없음
      */
-    @Async@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleProductViewed(ProductViewedEvent event) {
         try {
             log.debug("상품 조회 이벤트 수신 - productId: {}", event.productId());

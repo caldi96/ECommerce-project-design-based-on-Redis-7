@@ -1,5 +1,7 @@
 package io.hhplus.ECommerce.ECommerce_project.product.presentation;
 
+import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
+import io.hhplus.ECommerce.ECommerce_project.common.exception.ProductException;
 import io.hhplus.ECommerce.ECommerce_project.product.application.*;
 import io.hhplus.ECommerce.ECommerce_project.product.application.enums.ProductSortType;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
@@ -8,6 +10,8 @@ import io.hhplus.ECommerce.ECommerce_project.product.presentation.response.PageR
 import io.hhplus.ECommerce.ECommerce_project.product.presentation.response.ProductResponse;
 import io.hhplus.ECommerce.ECommerce_project.product.presentation.response.RankedProductResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -83,8 +87,16 @@ public class ProductController {
      * 인기 상품 TOP 20 조회
      */
     @GetMapping("/top-rank")
-    public ResponseEntity<List<RankedProductResponse>> getTopRankedProducts() {
-        List<Product> products = getTopRankedProductsUseCase.execute();
+    public ResponseEntity<List<RankedProductResponse>> getTopRankedProducts(
+            @RequestParam(defaultValue = "daily") String type,  // daily or weekly
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit
+    ) {
+
+        if (!"daily".equals(type) && !"weekly".equals(type)) {
+            throw new ProductException(ErrorCode.PRODUCT_RANKED_PRODUCT_TYPE_INVALID);
+        }
+
+        List<Product> products = getTopRankedProductsUseCase.execute(type, limit);
 
         // 랭킹 추가 (1~20)
         List<RankedProductResponse> rankedProducts = IntStream.range(0, products.size())

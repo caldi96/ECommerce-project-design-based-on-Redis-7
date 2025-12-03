@@ -31,6 +31,7 @@ public enum ErrorCode {
     PRODUCT_ID_INVALID("PRODUCT ID는 1 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
     PRODUCT_PRICE_INVALID("가격은 0 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
     PRODUCT_STOCK_INVALID("재고는 0 이상이어야 합니다.", HttpStatus.BAD_REQUEST),
+    PRODUCT_RANKED_PRODUCT_TYPE_INVALID("인기상품 조회 타입은 daily 혹은 weekly 중 하나여야 합니다.", HttpStatus.BAD_REQUEST),
     PRODUCT_OUT_OF_STOCK("재고가 부족합니다.", HttpStatus.CONFLICT),
     PRODUCT_ALREADY_ACTIVE("이미 활성화된 상품입니다.", HttpStatus.CONFLICT),
     PRODUCT_ALREADY_INACTIVE("이미 비활성화된 상품입니다.", HttpStatus.CONFLICT),

@@ -2,6 +2,7 @@ package io.hhplus.ECommerce.ECommerce_project.product.application.listener;
 
 import io.hhplus.ECommerce.ECommerce_project.payment.domain.event.PaymentCompletedEvent;
 import io.hhplus.ECommerce.ECommerce_project.product.application.service.RedisRankingService;
+import io.hhplus.ECommerce.ECommerce_project.product.domain.event.ProductViewedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -58,6 +59,29 @@ public class ProductRankingEventListener {
             // - 재시도 큐에 추가
             // - 관리자 알림
             // - Dead Letter Queue 저장
+        }
+    }
+
+    /**
+     * 상품 조회 이벤트 처리
+     * - 트랜잭션 커밋 후 Redis 조회수 증가
+     * - 비동기로 처리되어 상품 조회 응답 속도에 영향 없음
+     */
+    @Async@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleProductViewed(ProductViewedEvent event) {
+        try {
+            log.debug("상품 조회 이벤트 수신 - productId: {}", event.productId());
+
+            redisRankingService.incrementViewCount(event.productId());
+
+            log.debug("Redis 조회수 증가 완료 - productId: {}", event.productId());
+        } catch (Exception e) {
+            // Redis 업데이트 실패는 로깅만 하고 트랜잭션에 영향 없음
+            log.error("Redis 조회수 증가 실패 - productId: {}", event.productId(), e);
+
+            // TODO: 실패 시 처리 로직
+            // - 재시도 큐에 추가
+            // - 모니터링 알림
         }
     }
 }

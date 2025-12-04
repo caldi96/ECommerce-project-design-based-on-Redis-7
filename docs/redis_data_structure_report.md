@@ -6,7 +6,8 @@
   - [1.2 Key 전략](#12-key-전략)
   - [1.3 Score 계산 전략](#13-score-계산-전략)
   - [1.4 TTL 전략](#14-ttl-전략)
-  - [1.5 캐싱 전략](#15-캐싱-전략)
+  - [1.5 이벤트 전략](#15-이벤트-전략)
+  - [1.6 캐싱 전략](#16-캐싱-전략)
 - [2. 선착순 쿠폰 발급 기능](#2-선착순-쿠폰-발급-기능)
   - [2.1 Redis 자료구조 선택](#21-redis-자료구조-선택)
   - [2.2 구현 전략](#22-구현-전략)
@@ -97,7 +98,43 @@ Score = (판매량 × 10,000) + 조회수
 
 ---
 
-### 1.5 캐싱 전략
+### 1.5 이벤트 전략
+
+**문제 인식:**
+- 인기상품 랭킹의 Redis score 증가는 **핵심 비즈니스 로직이 아님**
+- 동기 방식으로 처리 시 성능 저하 발생
+
+**동기 방식의 문제점:**
+- 결제 완료 또는 상품 조회 시 Redis 업데이트가 **하나의 트랜잭션으로 결합**
+- 메인 비즈니스 로직의 응답 시간 증가
+- Redis 장애 시 전체 트랜잭션 실패 위험
+
+**해결 방안:**
+비동기 이벤트 전략 채택
+
+**구현 방식:**
+```java
+@Async
+@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+@Retryable(retryFor = Exception.class, maxAttempts = 3)
+public void handlePaymentCompleted(PaymentCompletedEvent event) {
+    redisRankingService.incrementSoldCount(productId, quantity);
+}
+```
+
+**비동기 이벤트 전략의 장점:**
+- ✅ **성능 향상**: 메인 비즈니스 로직과 분리하여 응답 시간 단축
+- ✅ **장애 격리**: Redis 장애가 결제/조회 트랜잭션에 영향 없음
+- ✅ **확장성**: 이벤트 기반으로 추가 로직 확장 용이
+- ✅ **재시도 전략**: @Retryable로 일시적 장애 대응
+
+**Trade-off:**
+- ⚠️ **최종 일관성(Eventual Consistency)**: 실시간 반영 아닌 약간의 지연 발생
+- ⚠️ 인기상품 랭킹은 실시간 정확도가 중요하지 않으므로 허용 가능
+
+---
+
+### 1.6 캐싱 전략
 
 **문제 인식:**
 - 인기상품 조회는 **빈번한 DB 접근**을 유발

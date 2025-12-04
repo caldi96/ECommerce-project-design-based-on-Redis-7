@@ -159,6 +159,7 @@ public enum ErrorCode {
     USER_COUPON_NOT_AVAILABLE("사용 가능한 상태가 아닙니다.", HttpStatus.CONFLICT),
     COUPON_MIN_ORDER_AMOUNT_NOT_MET("최소 주문 금액을 충족하지 못했습니다.", HttpStatus.BAD_REQUEST),
     COUPON_INVALID_DISCOUNT_TYPE("지원하지 않는 할인 타입입니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    COUPON_ISSUE_FAILED("쿠폰 발급이 실패했습니다.", HttpStatus.CONFLICT),
 
     // ===== Category =====
     CATEGORY_NOT_FOUND("카테고리를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),

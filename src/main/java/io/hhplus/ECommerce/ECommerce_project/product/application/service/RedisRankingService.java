@@ -212,4 +212,24 @@ public class RedisRankingService {
 
         return score != null;
     }
+
+    /**
+     * 상품을 모든 랭킹에서 제거 (상품 비활성화/삭제 시)
+     * - 현재 날짜/주차의 랭킹에서만 제거
+     * - 과거 랭킹은 TTL로 자동 삭제
+     */
+    public void removeFromRanking(Long productId) {
+        LocalDate today = LocalDate.now();
+        WeekFields weekFields = WeekFields.ISO;
+
+        String dailyKey = DAILY_RANKING_PREFIX + today.toString().replace("-", "");
+        String weeklyKey = WEEKLY_RANKING_PREFIX + today.getYear() + "-W" + today.get(weekFields.weekOfYear());
+
+        // 일별/주간 랭킹에서 제거
+        Long dailyRemoved = redisTemplate.opsForZSet().remove(dailyKey, productId.toString());
+        Long weeklyRemoved = redisTemplate.opsForZSet().remove(weeklyKey, productId.toString());
+
+        log.info("상품을 랭킹에서 제거 - productId: {}, daily: {}, weekly: {}",
+                productId, dailyRemoved > 0 ? "제거됨" : "없음", weeklyRemoved > 0 ? "제거됨" : "없음");
+    }
 }

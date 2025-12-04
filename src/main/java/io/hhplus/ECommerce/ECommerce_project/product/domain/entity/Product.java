@@ -109,6 +109,43 @@ public class Product extends BaseEntity {
         );
     }
 
+    /**
+     * 캐시 DTO로부터 Product 생성 (인기 상품 조회용)
+     * - Redis 캐시에서 조회한 데이터를 Product 엔티티로 변환
+     * - Validation 없이 그대로 생성 (이미 검증된 데이터)
+     */
+    public static Product fromCache(
+        Long id,
+        Category category,
+        String name,
+        String description,
+        BigDecimal price,
+        int stock,
+        boolean isActive,
+        int viewCount,
+        int soldCount,
+        Integer minOrderQuantity,
+        Integer maxOrderQuantity
+    ) {
+        Product product = new Product(
+            category,
+            name,
+            description,
+            price,
+            stock,
+            isActive,
+            viewCount,
+            soldCount,
+            minOrderQuantity,
+            maxOrderQuantity,
+            null,  // createdAt
+            null,  // updatedAt
+            null   // deletedAt
+        );
+        product.setId(id);  // ID는 setter로 설정
+        return product;
+    }
+
 
     // ===== 비즈니스 로직 메서드 =====
 

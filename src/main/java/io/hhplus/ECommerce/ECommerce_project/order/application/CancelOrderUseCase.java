@@ -76,8 +76,9 @@ public class CancelOrderUseCase {
             // 7-2. 해당 상품 재고 증가(DB 복구)
             product.increaseStock(orderItem.getQuantity());
 
-            // 7-3. Redis 재고 복구
-            redisStockService.setStock(productId, product.getStock());
+            // 7-3. Redis 재고 복구 (원자적 증가 연산 사용)
+            // setStock() 대신 increaseStock() 사용하여 Race Condition 방지
+            redisStockService.increaseStock(productId, orderItem.getQuantity());
         }
 
         // 8. 쿠폰 복구

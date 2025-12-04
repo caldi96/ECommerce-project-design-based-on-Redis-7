@@ -1,6 +1,7 @@
 package io.hhplus.ECommerce.ECommerce_project.product.application;
 
 import io.hhplus.ECommerce.ECommerce_project.product.application.service.ProductFinderService;
+import io.hhplus.ECommerce.ECommerce_project.product.application.service.RedisRankingService;
 import io.hhplus.ECommerce.ECommerce_project.product.application.service.RedisStockService;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.service.ProductDomainService;
@@ -17,6 +18,7 @@ public class DeleteProductUseCase {
     private final ProductFinderService productFinderService;
     private final ProductCacheInvalidator productCacheInvalidator;
     private final RedisStockService redisStockService;
+    private final RedisRankingService redisRankingService;
 
     @Transactional
     public void execute(Long productId) {
@@ -34,7 +36,10 @@ public class DeleteProductUseCase {
         // 4. Redis 재고 삭제
         redisStockService.deleteStock(productId);
 
-        // 5. 캐시 무효화
-        productCacheInvalidator.evictProductListCache(categoryId);
+        // 5. Redis 랭킹에서 제거
+        redisRankingService.removeFromRanking(productId);
+
+        // 6. 전체 캐시 무효화 (상품 캐시 + 목록 캐시)
+        productCacheInvalidator.clearProductCaches(productId, categoryId);
     }
 }

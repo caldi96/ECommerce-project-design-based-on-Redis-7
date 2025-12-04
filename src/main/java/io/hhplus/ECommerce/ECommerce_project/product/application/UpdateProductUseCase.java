@@ -6,8 +6,8 @@ import io.hhplus.ECommerce.ECommerce_project.product.application.command.UpdateP
 import io.hhplus.ECommerce.ECommerce_project.product.application.service.ProductFinderService;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.service.ProductDomainService;
+import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductCacheInvalidator;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,8 +18,8 @@ public class UpdateProductUseCase {
     private final ProductDomainService productDomainService;
     private final ProductFinderService productFinderService;
     private final CategoryFinderService categoryFinderService;
+    private final ProductCacheInvalidator cacheInvalidator;
 
-    @CacheEvict(value = "productList", allEntries = true, cacheManager = "redisCacheManager")
     @Transactional
     public Product execute(UpdateProductCommand command) {
 
@@ -28,6 +28,7 @@ public class UpdateProductUseCase {
 
         // 2. 기존 상품 조회
         Product product = productFinderService.getActiveProduct(command.id());
+        Long oldCategoryId = product.getCategory().getId();
 
         // 3. 도메인 메서드를 통해 각 필드 업데이트
         if (command.name() != null) {
@@ -66,7 +67,23 @@ public class UpdateProductUseCase {
             }
         }
 
-        // 4. 저장된 변경사항 반환 (캐시는 @CacheEvict로 자동 무효화)
+        // 4. 캐시 무효화
+        Long newCategoryId = product.getCategory().getId();
+
+        // 4-1. 상품 캐시 무효화 (인기상품 캐시)
+        cacheInvalidator.evictProductCache(command.id());
+
+        // 4-2. 상품 목록 캐시 무효화
+        if (!oldCategoryId.equals(newCategoryId)) {
+            // 카테고리가 변경된 경우 양쪽 모두 무효화
+            cacheInvalidator.evictProductListCache(oldCategoryId);
+            cacheInvalidator.evictProductListCache(newCategoryId);
+        } else {
+            // 같은 카테고리면 해당 카테고리만 무효화
+            cacheInvalidator.evictProductListCache(oldCategoryId);
+        }
+
+        // 5. 저장된 변경사항 반환
         return product;
     }
 

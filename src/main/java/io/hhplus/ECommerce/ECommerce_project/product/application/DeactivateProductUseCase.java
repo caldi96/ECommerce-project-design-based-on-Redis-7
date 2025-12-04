@@ -1,6 +1,7 @@
 package io.hhplus.ECommerce.ECommerce_project.product.application;
 
 import io.hhplus.ECommerce.ECommerce_project.product.application.service.ProductFinderService;
+import io.hhplus.ECommerce.ECommerce_project.product.application.service.RedisRankingService;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.entity.Product;
 import io.hhplus.ECommerce.ECommerce_project.product.domain.service.ProductDomainService;
 import io.hhplus.ECommerce.ECommerce_project.product.infrastructure.ProductCacheInvalidator;
@@ -15,6 +16,7 @@ public class DeactivateProductUseCase {
     private final ProductDomainService productDomainService;
     private final ProductFinderService productFinderService;
     private final ProductCacheInvalidator cacheInvalidator;
+    private final RedisRankingService redisRankingService;
 
     @Transactional
     public Product execute(Long productId) {
@@ -31,10 +33,13 @@ public class DeactivateProductUseCase {
             product.deactivate();
         }
 
-        // 4. 캐시 무효화
-        cacheInvalidator.evictProductListCache(categoryId);
+        // 4. Redis 랭킹에서 제거 (비활성 상품은 랭킹에 표시 안 함)
+        redisRankingService.removeFromRanking(productId);
 
-        // 5. 저장된 변경사항 반환
+        // 5. 전체 캐시 무효화 (상품 캐시 + 목록 캐시)
+        cacheInvalidator.clearProductCaches(productId, categoryId);
+
+        // 6. 저장된 변경사항 반환
         return product;
     }
 }

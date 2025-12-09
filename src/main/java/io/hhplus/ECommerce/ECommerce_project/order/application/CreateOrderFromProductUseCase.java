@@ -4,19 +4,14 @@ import io.hhplus.ECommerce.ECommerce_project.common.exception.CouponException;
 import io.hhplus.ECommerce.ECommerce_project.common.exception.ErrorCode;
 import io.hhplus.ECommerce.ECommerce_project.coupon.application.service.CouponFinderService;
 import io.hhplus.ECommerce.ECommerce_project.coupon.application.service.UserCouponFinderService;
-import io.hhplus.ECommerce.ECommerce_project.coupon.application.service.UserCouponUsageService;
 import io.hhplus.ECommerce.ECommerce_project.coupon.domain.entity.Coupon;
 import io.hhplus.ECommerce.ECommerce_project.coupon.domain.entity.UserCoupon;
 import io.hhplus.ECommerce.ECommerce_project.order.application.command.CreateOrderFromProductCommand;
 import io.hhplus.ECommerce.ECommerce_project.order.application.dto.ValidatedOrderFromProductData;
+import io.hhplus.ECommerce.ECommerce_project.order.application.service.OrderCompletionService;
 import io.hhplus.ECommerce.ECommerce_project.order.domain.constants.ShippingPolicy;
-import io.hhplus.ECommerce.ECommerce_project.order.domain.entity.OrderItem;
-import io.hhplus.ECommerce.ECommerce_project.order.domain.entity.Orders;
-import io.hhplus.ECommerce.ECommerce_project.order.infrastructure.OrderItemRepository;
-import io.hhplus.ECommerce.ECommerce_project.order.infrastructure.OrderRepository;
 import io.hhplus.ECommerce.ECommerce_project.order.presentation.response.CreateOrderResponse;
 import io.hhplus.ECommerce.ECommerce_project.point.application.service.PointFinderService;
-import io.hhplus.ECommerce.ECommerce_project.point.application.service.PointUsageService;
 import io.hhplus.ECommerce.ECommerce_project.point.domain.entity.Point;
 import io.hhplus.ECommerce.ECommerce_project.point.domain.service.PointDomainService;
 import io.hhplus.ECommerce.ECommerce_project.product.application.service.ProductFinderService;
@@ -27,11 +22,7 @@ import io.hhplus.ECommerce.ECommerce_project.user.application.service.UserFinder
 import io.hhplus.ECommerce.ECommerce_project.user.domain.entity.User;
 import io.hhplus.ECommerce.ECommerce_project.user.domain.service.UserDomainService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -40,8 +31,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CreateOrderFromProductUseCase {
 
-    private final OrderRepository orderRepository;
-    private final OrderItemRepository orderItemRepository;
     private final StockService stockService;
     private final UserDomainService userDomainService;
     private final UserFinderService userFinderService;
@@ -49,10 +38,9 @@ public class CreateOrderFromProductUseCase {
     private final ProductFinderService productFinderService;
     private final CouponFinderService couponFinderService;
     private final UserCouponFinderService userCouponFinderService;
-    private final UserCouponUsageService userCouponUsageService;
     private final PointDomainService pointDomainService;
     private final PointFinderService pointFinderService;
-    private final PointUsageService pointUsageService;
+    private final OrderCompletionService orderCompletionService;
 
     public CreateOrderResponse execute(CreateOrderFromProductCommand command) {
 
@@ -64,7 +52,7 @@ public class CreateOrderFromProductUseCase {
 
         try {
             // 3. 주문 완료 (트랜잭션 2)
-            return completeOrder(command, validatedOrderFromProductData);
+            return orderCompletionService.completeOrderFromProduct(command, validatedOrderFromProductData);
         } catch (Exception e) {
             // 4. 실패 시 재고 복구 (보상 트랜잭션)
             stockService.compensateStock(command.productId(), command.quantity());
@@ -139,68 +127,5 @@ public class CreateOrderFromProductUseCase {
 
         // 검증된 데이터 반환
         return new ValidatedOrderFromProductData(totalAmount, shippingFee, discountAmount);
-    }
-
-    @Retryable(
-            retryFor = OptimisticLockingFailureException.class,
-            maxAttempts = 3,
-            backoff = @Backoff(delay = 100)
-    )
-    @Transactional
-    public CreateOrderResponse completeOrder(
-            CreateOrderFromProductCommand command,
-            ValidatedOrderFromProductData validatedOrderFromProductData
-    ) {
-
-        // 1. 사용자 확인 (낙관적 락 - 본인만 접근하는 리소스)
-        User user = userFinderService.getUser(command.userId());
-
-        // 2. 상품 락 없이 조회 (OrderItem 생성용)
-        Product product = productFinderService.getProduct(command.productId());
-
-        // 3. 쿠폰 사용 처리 (서비스에 위임)
-        BigDecimal discountAmount = BigDecimal.ZERO;
-        Coupon coupon = null;
-
-        if (command.couponId() != null) {
-            coupon = userCouponUsageService.useCoupon(command.userId(), command.couponId());
-            discountAmount = validatedOrderFromProductData.discountAmount();
-        }
-
-        // 4. Order 생성 (최종 금액은 Order에서 create할때 계산)
-        Orders order = Orders.createOrder(
-                user,
-                coupon,
-                validatedOrderFromProductData.totalAmount(),
-                validatedOrderFromProductData.shippingFee(),
-                discountAmount,
-                command.pointAmount()
-        );
-
-        // 5. 저장
-        Orders savedOrder = orderRepository.save(order);
-
-        // 6. 포인트 사용 처리 (서비스에 위임)
-        if (command.pointAmount() != null
-                && command.pointAmount().compareTo(BigDecimal.ZERO) > 0) {
-            pointUsageService.usePoints(
-                    command.userId(),
-                    command.pointAmount(),
-                    savedOrder
-            );
-        }
-
-        // 7. OrderItem 생성
-        OrderItem orderItem = OrderItem.createOrderItem(
-                savedOrder,
-                product,
-                product.getName(),
-                command.quantity(),
-                product.getPrice()
-        );
-        OrderItem savedOrderItem = orderItemRepository.save(orderItem);
-        List<OrderItem> orderItems = List.of(savedOrderItem);
-
-        return CreateOrderResponse.from(savedOrder, orderItems);
     }
 }

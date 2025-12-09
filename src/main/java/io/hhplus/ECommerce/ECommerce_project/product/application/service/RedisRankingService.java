@@ -21,6 +21,8 @@ public class RedisRankingService {
 
     private static final String DAILY_RANKING_PREFIX = "ranking:daily:";
     private static final String WEEKLY_RANKING_PREFIX = "ranking:weekly:";
+    private static final Double SOLD_COUNT_WEIGHT = 10000.0;
+    private static final Double VIEW_COUNT_WEIGHT = 1.0;
 
     /**
      * 일별 인기상품 Sort Set 초기화
@@ -60,7 +62,7 @@ public class RedisRankingService {
      * @return
      */
     private double calculateScore(int soldCount, int viewCount) {
-        return soldCount * 10000.0 + viewCount;
+        return soldCount * SOLD_COUNT_WEIGHT + viewCount * VIEW_COUNT_WEIGHT;
     }
 
     /**

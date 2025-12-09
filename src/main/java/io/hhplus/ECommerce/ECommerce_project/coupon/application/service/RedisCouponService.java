@@ -32,7 +32,8 @@ public class RedisCouponService {
     private final RedisScript<Long> redisCouponIssueScript;
 
     private static final String COUPON_ISSUE_PREFIX = "coupon:issue:";
-    private static final long DEFAULT_TTL_SECONDS = 30 * 24 * 60 * 60; // 30일
+    private static final long DEFAULT_TTL_DAYS = 30;
+    private static final long DEFAULT_TTL_SECONDS = DEFAULT_TTL_DAYS * 24 * 60 * 60; // 30일
 
     /**
      * 선착순 쿠폰 발급 시도
